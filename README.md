@@ -82,7 +82,7 @@ If you would like to support projects from fanselectronics.com:
 - info@fanselectronics.com
 - www.facebook.com/FansElectronicsCom
 - www.instagram.com/fanselectronics
-- saweria.co/fanselectronics
+- www.saweria.co/fanselectronics
 
 ---
 
