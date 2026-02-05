@@ -1,6 +1,6 @@
 # FansElectronics_License
 
-[🇺🇸 English Version](README-en.md)
+[🇺🇸 English Version](README-EN.md)
 
 ---
 
