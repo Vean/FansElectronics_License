@@ -1,58 +1,60 @@
 # FansElectronics_License
 
-[🇺🇸 English Version](README-EN.md)
+[🇮🇩 Bahasa Indonesia](README-id.md)
 
 ---
 
-## Deskripsi
-**FansElectronics License** adalah Arduino Library untuk membuat sistem lisensi offline pada perangkat berbasis **ESP32 dan ESP8266**.
+## Description
+**FansElectronics License** is an Arduino library designed to implement an offline licensing system for **ESP32 and ESP8266** devices.
 
-Library ini dirancang untuk membantu developer dan produsen perangkat IoT agar dapat:
-- Mengunci firmware ke hardware tertentu
-- Mengaktifkan fitur berdasarkan lisensi
-- Mencegah cloning perangkat
-- Menjalankan verifikasi lisensi tanpa koneksi internet
+This library helps IoT developers and hardware manufacturers to:
+- Lock firmware to specific hardware
+- Enable features based on license
+- Prevent device cloning
+- Verify licenses without internet connection
 
-Library mendukung 3 mode keamanan:
+Supported security modes:
 
-| Mode | Platform | Keamanan | Keterangan |
+| Mode | Platform | Security | Description |
 |---|---|---|---|
-| LIGHT | ESP32 & ESP8266 | ⭐ | Device binding saja |
-| HMAC | ESP32 & ESP8266 | ⭐⭐⭐ | Signature berbasis secret |
+| LIGHT | ESP32 & ESP8266 | ⭐ | Device binding only |
+| HMAC | ESP32 & ESP8266 | ⭐⭐⭐ | Secret-key signature |
 | ECDSA | ESP32 | ⭐⭐⭐⭐⭐ | Public-key cryptography |
 
-Cocok digunakan untuk:
-- Produk IoT komersial
-- Controller LED Matrix / Display
-- Smart device offline 24/7
-- Produk OEM / mass production
+Perfect for:
+- Commercial IoT products
+- LED controller / display systems
+- 24/7 offline devices
+- OEM / mass production hardware
 
 ---
 
-## Fitur Utama
-- Device ID unik berbasis hardware
-- Offline license verification (tanpa internet)
-- Multi encryption mode (LIGHT, HMAC, ECDSA)
-- Support ESP32 & ESP8266
-- License berbasis JSON (mudah dikustom)
-- Tools generator license (CLI & Web)
-- Sistem siap produksi (production-ready)
+## Features
+- Unique hardware-based Device ID
+- Offline license verification
+- Multiple encryption modes (LIGHT, HMAC, ECDSA)
+- Supports ESP32 & ESP8266
+- JSON-based license format
+- License generator tools (CLI & Web)
+- Production-ready architecture
 
 ---
 
-## Cara Kerja Singkat
-1️⃣ Device membuat **Device ID unik**  
-2️⃣ Developer membuat file `license.json` menggunakan tool generator  
-3️⃣ License disimpan di LittleFS perangkat  
-4️⃣ Firmware memverifikasi lisensi saat boot  
+## How It Works
 
-Jika valid → fitur aktif  
-Jika tidak valid → perangkat terkunci
+1️⃣ Device generates a unique **Device ID**  
+2️⃣ Developer creates `license.json` using generator tool  
+3️⃣ License is stored in LittleFS  
+4️⃣ Firmware verifies license at boot  
+
+Valid license → features enabled  
+Invalid license → device locked
 
 ---
 
-## Struktur License File
-Contoh `license.json`:
+## License File Structure
+
+Example `license.json`:
 
 ```json
 {
@@ -60,34 +62,33 @@ Contoh `license.json`:
     "device_id": "ABC123",
     "product": "PRODUCT NAME",
     "serial": "SN001",
-    "expiry": 2026-02-06
+    "panel": 64
   },
   "signature": "BASE64_SIGNATURE"
 }
 ```
 
----
-
-## Dibuat oleh
+## Created By
 - Writer            : Irfan Indra Kurniawan, ST
 - Organisasi        : Fans Electronics
 - Website           : www.fanselectronics.com
 - Email             : info@fanselectronics.com
-> **Catatan dari pembuat:** Silahkan kembangkan dan gunakan untuk ibadah, pendidikan, pribadi, atau komersil, jika ada pengembangan lebih lanjut disarankan untuk membagikan agar ilmunya bermanfaat 😍
+> **Author note:** Feel free to develop and use this library for education, personal, religious, or commercial purposes. If you improve this project, please consider sharing your contribution so the knowledge can benefit others 😍
 
 ---
 
-## Buat Beli Kopi ☕
-Sedikit Kopi dan jika ingin berdonasi untuk project-project di fanselectronics.com, melalui:
+## Buy me a Coffe ☕
+If you would like to support projects from fanselectronics.com:
 - info@fanselectronics.com
 - www.facebook.com/FansElectronicsCom
 - www.instagram.com/fanselectronics
-- www.saweria.co/fanselectronics
+- saweria.co/fanselectronics
 
 ---
 
-## Terimakasih kepada
+## Thanks To
 - Allah Subhanahu Wa Ta'ala
 - Arduino.cc
 - Contributor
 - Donatur
+
