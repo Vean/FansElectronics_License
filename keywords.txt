@@ -1,0 +1,22 @@
+#######################################
+# FansElectronics License Keywords
+#######################################
+
+FansElectronics_License	KEYWORD1
+
+FEL_DeviceInfo		KEYWORD1
+
+generateDeviceID	KEYWORD2
+getDeviceInfo		KEYWORD2
+loadLicense		KEYWORD2
+verifyLicense		KEYWORD2
+isLicenseForThisDevice	KEYWORD2
+getLicenseJSON		KEYWORD2
+getLicensedDeviceID	KEYWORD2
+getMode			KEYWORD2
+printLicenseData	KEYWORD2
+printDebug		KEYWORD2
+
+LIGHT			LITERAL1
+HMAC			LITERAL1
+ECDSA			LITERAL1
