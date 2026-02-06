@@ -4,7 +4,7 @@
 
 ---
 
-## Description
+## Description 📖
 **FansElectronics License** is an Arduino library designed to implement an offline licensing system for **ESP32 and ESP8266** devices.
 
 This library helps IoT developers and hardware manufacturers to:
@@ -15,11 +15,15 @@ This library helps IoT developers and hardware manufacturers to:
 
 Supported security modes:
 
-| Mode | Platform | Security | Description |
-|---|---|---|---|
-| LIGHT | ESP32 & ESP8266 | ⭐ | Device binding only |
-| HMAC | ESP32 & ESP8266 | ⭐⭐⭐ | Secret-key signature |
-| ECDSA | ESP32 | ⭐⭐⭐⭐⭐ | Public-key cryptography |
+## Security Modes 🔒
+
+| Mode | Platform | Security | Description | Status |
+|---|---|---|---|---|
+| LIGHT | ESP32 & ESP8266 | ⭐ | Device binding only | ✅ Implemented |
+| HMAC | ESP32 & ESP8266 | ⭐⭐⭐ | Secret-key signature | ✅ Implemented |
+| ECDSA | ESP32 | ⭐⭐⭐⭐⭐ | Public-key cryptography | ✅ Implemented |
+| AES | ESP32 & ESP8266 | ⭐⭐⭐⭐ | Encrypted license file (confidentiality) | 🚧 Next Update |
+| Ed25519 | ESP32 & ESP8266 | ⭐⭐⭐⭐⭐ | Modern public-key signature | 🚧 Next Update |
 
 Perfect for:
 - Commercial IoT products
@@ -29,7 +33,7 @@ Perfect for:
 
 ---
 
-## Features
+## Features ✨
 - Unique hardware-based Device ID
 - Offline license verification
 - Multiple encryption modes (LIGHT, HMAC, ECDSA)
@@ -40,7 +44,7 @@ Perfect for:
 
 ---
 
-## How It Works
+## How It Works ❓
 
 1️⃣ Device generates a unique **Device ID**  
 2️⃣ Developer creates `license.json` using generator tool  
@@ -52,7 +56,7 @@ Invalid license → device locked
 
 ---
 
-## License File Structure
+## License File Structure 🔑
 
 Example `license.json`:
 
@@ -68,7 +72,20 @@ Example `license.json`:
 }
 ```
 
-## Created By
+---
+## ESP Performance Comparison (Estimated) 📊
+
+| Mode | ESP8266 RAM Usage | ESP32 RAM Usage | Verify Speed ESP8266 | Verify Speed ESP32 | License Size |
+|---|---|---|---|---|---|
+| LIGHT | ~1 KB | ~1 KB | < 1 ms | < 1 ms | Tiny |
+| HMAC-SHA256 | ~4–6 KB | ~3–4 KB | ~5–10 ms | ~2–4 ms | Small |
+| ECDSA-P256 | ~20–25 KB | ~12–16 KB | ~120–250 ms | ~20–40 ms | Medium |
+| AES-256 (decrypt) | ~4–6 KB | ~2–3 KB (HW accel) | ~8–15 ms | ~1–2 ms | Encrypted |
+| Ed25519 | ~10–14 KB | ~8–12 KB | ~40–80 ms | ~8–15 ms | Small |
+
+---
+
+## Created By 💻
 - Writer            : Irfan Indra Kurniawan, ST
 - Organisasi        : Fans Electronics
 - Website           : www.fanselectronics.com
@@ -86,9 +103,9 @@ If you would like to support projects from fanselectronics.com:
 
 ---
 
-## Thanks To
+## Thanks To 🤲
 - Allah Subhanahu Wa Ta'ala
 - Arduino.cc
+- GitHub
 - Contributor
-- Donatur
-
+- Everyone who gives me coffee
