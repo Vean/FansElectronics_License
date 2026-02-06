@@ -1,5 +1,5 @@
 {
-    "name": "FansElectronics License",
+    "name": "FansElectronics_License",
     "version": "1.0.0",
     "description": "Offline License System for ESP32 and ESP8266 (LIGHT, HMAC, ECDSA)",
     "keywords": [
