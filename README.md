@@ -79,7 +79,7 @@ Example `license.json`:
 |---|---|---|---|---|---|
 | LIGHT | ~1 KB | ~1 KB | < 1 ms | < 1 ms | Tiny |
 | HMAC-SHA256 | ~4–6 KB | ~3–4 KB | ~5–10 ms | ~2–4 ms | Small |
-| ECDSA-P256 | ~20–25 KB | ~12–16 KB | ~120–250 ms | ~20–40 ms | Medium |
+| ECDSA-P256 | Unsupport | ~12–16 KB | Unsupport | ~20–40 ms | Medium |
 | AES-256 (decrypt) | ~4–6 KB | ~2–3 KB (HW accel) | ~8–15 ms | ~1–2 ms | Encrypted |
 | Ed25519 | ~10–14 KB | ~8–12 KB | ~40–80 ms | ~8–15 ms | Small |
 
@@ -94,7 +94,7 @@ Example `license.json`:
 
 ---
 
-## Buy me a Coffe ☕
+## Buy me a Coffee ☕
 If you would like to support projects from fanselectronics.com:
 - info@fanselectronics.com
 - www.facebook.com/FansElectronicsCom
