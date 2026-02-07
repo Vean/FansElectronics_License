@@ -38,6 +38,7 @@ public:
   FEL_DeviceInfo getDeviceInfo();
   String generateDeviceID(String secret, bool useFlashSize = true);
   String getValue(const char *key);
+  String decodeSecret(const uint8_t *data, size_t len, uint8_t xorKey);
   uint8_t getMode();
   bool loadLicense();
   bool verifyLicense(const char *key);

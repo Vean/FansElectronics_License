@@ -202,6 +202,26 @@ String FansElectronics_License::generateDeviceID(String secret, bool useFlashSiz
 }
 
 // =====================================================
+// Decode XOR Obfuscated Secret (PROGMEM Safe)
+// =====================================================
+String FansElectronics_License::decodeSecret(const uint8_t *data, size_t len, uint8_t xorKey)
+{
+  char decoded[len + 1];
+
+  for (size_t i = 0; i < len; i++)
+  {
+#if defined(ESP32)
+    decoded[i] = pgm_read_byte(&data[i]) ^ xorKey;
+#elif defined(ESP8266)
+    decoded[i] = pgm_read_byte(&data[i]) ^ xorKey;
+#endif
+  }
+
+  decoded[len] = '\0';
+  return String(decoded);
+}
+
+// =====================================================
 // LOAD LICENSE
 // =====================================================
 bool FansElectronics_License::loadLicense()
