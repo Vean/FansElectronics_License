@@ -102,7 +102,7 @@ Output → `license.json`
 Create `generate_license.bat`
 
 ```bat
-php generate_license.php encryption=ECDSA device_id=ABC123
+php license_generator.php encryption=ECDSA device_id=ABC123
 pause
 ```
 

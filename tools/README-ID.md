@@ -115,7 +115,7 @@ Buat file `generate_license.bat`
 Isi:
 
 ```bat
-php generate_license.php encryption=ECDSA device_id=ABC123 product="LED Controller"
+php license_generator.php encryption=ECDSA device_id=ABC123 product="LED Controller"
 pause
 ```
 
