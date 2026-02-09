@@ -261,6 +261,51 @@ bool FansElectronics_License::loadLicense()
 }
 
 // =====================================================
+// Parse PUBLIC KEY PEM → Base64 only (PROGMEM SAFE)
+// hasil harus identik dengan PHP loadPublicKeyAsString()
+// =====================================================
+String FansElectronics_License::parsePublicKeyToString(const char *pem)
+{
+  String out;
+  out.reserve(200);
+
+  char line[100];
+  uint16_t idx = 0;
+  uint16_t i = 0;
+
+  while (true)
+  {
+    char c = pgm_read_byte(&pem[i++]);
+    if (c == 0)
+      break;
+
+    // akhir baris (\n atau \r)
+    if (c == '\n' || c == '\r')
+    {
+      line[idx] = '\0';
+
+      // skip header & footer
+      if (strstr(line, "BEGIN PUBLIC KEY") == NULL &&
+          strstr(line, "END PUBLIC KEY") == NULL &&
+          strlen(line) > 0)
+      {
+        // ambil base64 di baris ini
+        out += line;
+      }
+
+      idx = 0;
+      continue;
+    }
+
+    // simpan karakter ke buffer baris
+    if (idx < sizeof(line) - 1)
+      line[idx++] = c;
+  }
+
+  return out;
+}
+
+// =====================================================
 // VERIFY LICENSE SIGNATURE
 // =====================================================
 bool FansElectronics_License::verifyLicense(const char *key)

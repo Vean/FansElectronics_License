@@ -39,6 +39,8 @@ public:
   String generateDeviceID(String secret, bool useFlashSize = true);
   String getValue(const char *key);
   String decodeSecret(const uint8_t *data, size_t len, uint8_t xorKey);
+  String parsePublicKeyToString(const char *key);
+
   uint8_t getMode();
   bool loadLicense();
   bool verifyLicense(const char *key);
@@ -59,5 +61,5 @@ private:
   bool _licenseChecked;
   String licenseDataString;
   String licenseSignature;
-  DynamicJsonDocument licenseDoc{2048};
+  JsonDocument licenseDoc;
 };
