@@ -1,6 +1,6 @@
 {
     "name": "FansElectronics_License",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Offline License System for ESP32 and ESP8266 (LIGHT, HMAC, ECDSA)",
     "keywords": [
         "license",
@@ -34,6 +34,6 @@
         "espressif32"
     ],
     "dependencies": {
-        "bblanchon/ArduinoJson": "^7.0.0"
+        "bblanchon/ArduinoJson": "^6.19.0"
     }
 }
