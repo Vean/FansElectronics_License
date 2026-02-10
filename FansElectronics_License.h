@@ -37,10 +37,13 @@ public:
   FansElectronics_License(uint8_t mode = ECDSA);
   FEL_DeviceInfo getDeviceInfo();
   String generateDeviceID(String secret, bool useFlashSize = true);
-  String getValue(const char *key);
   String decodeSecret(const uint8_t *data, size_t len, uint8_t xorKey);
   String parsePublicKeyToString(const char *key);
-
+  String getString(const char *key);
+  bool getBool(const char *key, bool defaultVal = false);
+  int getInt(const char *key, int defaultVal = 0);
+  float getFloat(const char *key, float defaultVal = 0);
+  double getDouble(const char *key, double defaultVal = 0);
   uint8_t getMode();
   bool loadLicense();
   bool verifyLicense(const char *key);

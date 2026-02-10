@@ -432,12 +432,112 @@ uint8_t FansElectronics_License::getMode()
 
 // =====================================================
 // Helper: get value from license data
-String FansElectronics_License::getValue(const char *key)
+String FansElectronics_License::getString(const char *key)
 {
   if (!licenseDoc["data"].containsKey(key))
     return "";
 
-  return licenseDoc["data"][key].as<String>();
+  JsonVariant v = licenseDoc["data"][key];
+
+  if (v.is<const char *>())
+    return String(v.as<const char *>());
+
+  if (v.is<bool>())
+    return v.as<bool>() ? "true" : "false";
+
+  if (v.is<long>() || v.is<int>())
+    return String(v.as<long>());
+
+  if (v.is<float>() || v.is<double>())
+    return String(v.as<double>(), 6);
+
+  return "";
+}
+// =====================================================
+// Helper: get value from license data as Boolean
+bool FansElectronics_License::getBool(const char *key, bool defaultVal)
+{
+  if (!licenseDoc["data"].containsKey(key))
+    return defaultVal;
+
+  JsonVariant v = licenseDoc["data"][key];
+
+  if (v.is<bool>())
+    return v.as<bool>();
+
+  if (v.is<int>())
+    return v.as<int>() != 0;
+
+  if (v.is<const char *>())
+  {
+    String s = v.as<const char *>();
+    s.toLowerCase();
+    return (s == "true" || s == "1" || s == "yes");
+  }
+
+  return defaultVal;
+}
+// =====================================================
+// Helper: get value from license data as Int
+int FansElectronics_License::getInt(const char *key, int defaultVal)
+{
+  if (!licenseDoc["data"].containsKey(key))
+    return defaultVal;
+
+  JsonVariant v = licenseDoc["data"][key];
+
+  if (v.is<int>() || v.is<long>())
+    return v.as<int>();
+
+  if (v.is<const char *>())
+    return String(v.as<const char *>()).toInt();
+
+  if (v.is<bool>())
+    return v.as<bool>() ? 1 : 0;
+
+  return defaultVal;
+}
+
+// =====================================================
+// Helper: get value from license data as Float
+float FansElectronics_License::getFloat(const char *key, float defaultVal)
+{
+  if (!licenseDoc["data"].containsKey(key))
+    return defaultVal;
+
+  JsonVariant v = licenseDoc["data"][key];
+
+  if (v.is<float>() || v.is<double>())
+    return v.as<float>();
+
+  if (v.is<const char *>())
+    return String(v.as<const char *>()).toFloat();
+
+  if (v.is<int>())
+    return (float)v.as<int>();
+
+  return defaultVal;
+}
+
+// =====================================================
+// Helper: get value from license data as Double
+double FansElectronics_License::getDouble(const char *key, double defaultVal)
+{
+  if (!licenseDoc["data"].containsKey(key))
+    return defaultVal;
+
+  JsonVariant v = licenseDoc["data"][key];
+
+  if (v.is<float>() || v.is<double>())
+    return v.as<double>();
+
+  if (v.is<const char *>())
+    return String(v.as<const char *>()).toDouble();
+
+  if (v.is<int>())
+    return (double)v.as<int>();
+
+  return defaultVal;
 }
 
 // Helper: check if key exists in license data
