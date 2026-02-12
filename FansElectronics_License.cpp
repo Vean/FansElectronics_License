@@ -30,18 +30,16 @@
 #endif
 
 // =====================================================
-// GLOBAL JSON DOCUMENT TYPE (for class members)
-// =====================================================
-
-// =====================================================
 // CONSTRUCTOR
 // =====================================================
 #if defined(ESP32)
-FansElectronics_License::FansElectronics_License(uint8_t mode)
-    : licenseDoc(2048) // ⭐ ukuran JSON library
+#define FEL_JSON_INIT_LIST : licenseDoc(1024)
 #else
-FansElectronics_License::FansElectronics_License(uint8_t mode)
+#define FEL_JSON_INIT_LIST
 #endif
+
+FansElectronics_License::FansElectronics_License(uint8_t mode)
+    FEL_JSON_INIT_LIST
 {
 #if defined(ESP8266)
   if (mode == ECDSA)
@@ -80,7 +78,7 @@ static const unsigned char b64_table[65] =
 
 int FEL_base64_decode(uint8_t *out, const char *in, int len)
 {
-  int i = 0, j = 0;
+  int j = 0;
   int val = 0, valb = -8;
 
   for (int k = 0; k < len; k++)
