@@ -36,10 +36,14 @@
 // =====================================================
 // CONSTRUCTOR
 // =====================================================
+#if defined(ESP32)
 FansElectronics_License::FansElectronics_License(uint8_t mode)
+    : licenseDoc(2048) // ⭐ ukuran JSON library
+#else
+FansElectronics_License::FansElectronics_License(uint8_t mode)
+#endif
 {
 #if defined(ESP8266)
-  // ESP8266 tidak bisa ECDSA → fallback otomatis
   if (mode == ECDSA)
     _mode = HMAC;
   else

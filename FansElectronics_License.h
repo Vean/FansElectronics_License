@@ -72,5 +72,5 @@ private:
   bool _licenseChecked;
   String licenseDataString;
   String licenseSignature;
-  StaticJsonDocument<1024> licenseDoc;
+  JSON_DOC_GLOBAL licenseDoc;
 };
