@@ -34,6 +34,6 @@
         "espressif32"
     ],
     "dependencies": {
-        "bblanchon/ArduinoJson": "^6.19.0"
+        "bblanchon/ArduinoJson": "^6.21.5"
     }
 }

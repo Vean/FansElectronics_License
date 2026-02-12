@@ -30,6 +30,10 @@
 #endif
 
 // =====================================================
+// GLOBAL JSON DOCUMENT TYPE (for class members)
+// =====================================================
+
+// =====================================================
 // CONSTRUCTOR
 // =====================================================
 FansElectronics_License::FansElectronics_License(uint8_t mode)
@@ -547,7 +551,7 @@ bool FansElectronics_License::hasKey(const char *key)
 }
 
 // Helper: access raw JSON license data
-JsonDocument &FansElectronics_License::getLicenseJSON()
+JSON_DOC_GLOBAL &FansElectronics_License::getLicenseJSON()
 {
   return licenseDoc;
 }

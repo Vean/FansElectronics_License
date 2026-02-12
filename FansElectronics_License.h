@@ -24,6 +24,14 @@
 #define HMAC 1
 #define ECDSA 2
 
+#if defined(ESP8266)
+typedef StaticJsonDocument<1024> JSON_DOC_GLOBAL;
+#elif defined(ESP32)
+typedef DynamicJsonDocument JSON_DOC_GLOBAL;
+#else
+typedef StaticJsonDocument<1024> JSON_DOC_GLOBAL;
+#endif
+
 struct FEL_DeviceInfo
 {
   String mac;
@@ -53,7 +61,7 @@ public:
   void printLicenseData(Stream &s);
 
   // akses raw JSON license data
-  JsonDocument &getLicenseJSON();
+  JSON_DOC_GLOBAL &getLicenseJSON();
 
   // helper: ambil device_id dari license
   String getLicensedDeviceID();
@@ -64,5 +72,5 @@ private:
   bool _licenseChecked;
   String licenseDataString;
   String licenseSignature;
-  JsonDocument licenseDoc;
+  StaticJsonDocument<1024> licenseDoc;
 };
