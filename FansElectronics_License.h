@@ -4,7 +4,7 @@
   Wrote by    : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-06
-  Version     : 1.0.0
+  Version     : 1.1.0
   Website     : https://fanselectronics.com
   Repository  : https://github.com/Vean/FansElectronics_License
 
