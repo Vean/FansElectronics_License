@@ -13,8 +13,44 @@ This library helps IoT developers and hardware manufacturers to:
 - Prevent device cloning
 - Verify licenses without internet connection
 
-Supported security modes:
+---
 
+## What's New in v2.0.0 🚀
+
+Major update focused on **memory stability and usability**.
+
+### Breaking change (one-line migration)
+```cpp
+// v1.x
+FansElectronics_License license(HMAC);
+
+// v2.0.0
+StaticJsonDocument<1024> doc;   // ESP8266
+DynamicJsonDocument doc(1024);  // ESP32
+FansElectronics_License license(doc, HMAC);
+```
+
+### Why this change?
+Previously the JSON memory size was fixed inside the library.  
+Now **users control the memory size**, making the library stable for production projects.
+
+Benefits:
+- No need to edit library source anymore
+- Safer for ESP8266 heap
+- Scalable for large projects
+
+---
+
+## Features ✨
+- Unique hardware-based Device ID
+- Offline license verification
+- Multiple encryption modes (LIGHT, HMAC, ECDSA)
+- Supports ESP32 & ESP8266
+- JSON-based license format
+- License generator tools (CLI & Web)
+- Production-ready architecture
+
+---
 ## Security Modes 🔒
 
 | Mode | Platform | Security | Description | Status |
@@ -33,14 +69,13 @@ Perfect for:
 
 ---
 
-## Features ✨
-- Unique hardware-based Device ID
-- Offline license verification
-- Multiple encryption modes (LIGHT, HMAC, ECDSA)
-- Supports ESP32 & ESP8266
-- JSON-based license format
-- License generator tools (CLI & Web)
-- Production-ready architecture
+## ArduinoJson Requirement ⚠️
+This library uses **ArduinoJson v6.21.5**.
+
+Why not ArduinoJson v7?
+- ESP8266 requires deterministic memory allocation
+- v7 uses dynamic heap allocation
+- v6 fixed memory pool is more stable for long-running IoT devices
 
 ---
 
@@ -58,8 +93,6 @@ Invalid license → device locked
 
 ## License File Structure 🔑
 
-Example `license.json`:
-
 ```json
 {
   "data": {
@@ -73,6 +106,7 @@ Example `license.json`:
 ```
 
 ---
+
 ## ESP Performance Comparison (Estimated) 📊
 
 | Mode | ESP8266 RAM Usage | ESP32 RAM Usage | Verify Speed ESP8266 | Verify Speed ESP32 | License Size |
@@ -87,15 +121,15 @@ Example `license.json`:
 
 ## Created By 💻
 - Writer            : Irfan Indra Kurniawan, ST
-- Organisasi        : Fans Electronics
+- Organization      : Fans Electronics
 - Website           : www.fanselectronics.com
 - Email             : info@fanselectronics.com
-> **Author note:** Feel free to develop and use this library for education, personal, religious, or commercial purposes. If you improve this project, please consider sharing your contribution so the knowledge can benefit others 😍
+
+> **Author note:** Feel free to develop and use this library for education, personal, religious, or commercial purposes.
 
 ---
 
 ## Buy me a Coffee ☕
-If you would like to support projects from fanselectronics.com:
 - info@fanselectronics.com
 - www.facebook.com/FansElectronicsCom
 - www.instagram.com/fanselectronics
