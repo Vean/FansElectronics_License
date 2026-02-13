@@ -4,7 +4,8 @@
   Writer      : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-07
-  Library     : FansElectronics_License v1.0.1
+  Updated     : 2026-02-13
+  Library     : FansElectronics_License v2.0.0
   Website     : https://www.fanselectronics.com
   Repository  : https://github.com/Vean/FansElectronics_License
   Example     : Obfuscated_Secret
@@ -34,6 +35,9 @@
   Ini adalah hardening firmware.
 ============================================================ */
 
+// EN: Include FansElectronics_License library & ArduinoJSON
+// ID: Masukkan library FansElectronics_License & ArduinoJSON
+#include <ArduinoJson.h>
 #include <FansElectronics_License.h>
 
 /* ============================================================
@@ -63,6 +67,10 @@ const uint8_t SECRET_OBF[] PROGMEM = {
     0x08, 0x05, 0x09, 0x1F, 0x19, 0x08, 0x1F,
     0x0E, 0x05, 0x6B, 0x68, 0x69};
 
+// EN: Recomendation minimum memory, u can change it
+// ID: Rekomendasi minimal memory, anda bisa memnggantinya
+#define JSON_MEMORY 1024
+
 /* ============================================================
    PUBLIC KEY (ECDSA)
 ============================================================ */
@@ -74,7 +82,17 @@ hVwhQLYTEp7VjGE/OlCWzeVPrx8cQxl25Fw1497TsNyW3TP+QxwVXbnaZw==
 -----END PUBLIC KEY-----
 )KEY";
 
-FansElectronics_License license(ECDSA);
+// EN: Set ESP8266 & ESP32 JSON Memory Type
+// ID: Set  ESP8266 & ESP32 JSON Tipe Memory
+#if defined(ESP8266)
+StaticJsonDocument<JSON_MEMORY> doc;
+#elif defined(ESP32)
+DynamicJsonDocument doc(JSON_MEMORY);
+#endif
+
+// EN: Create FansElectronics_License object in ECDSA mode
+// ID: Buat objek FansElectronics_License dalam mode ECDSA
+FansElectronics_License license(doc, ECDSA); // JSON doc, Encryption Type
 
 /* ============================================================
    SETUP
@@ -115,30 +133,49 @@ void setup()
     Serial.println("MAC         : " + info.mac);
     Serial.println("FLASH SIZE  : " + info.flashSize);
 
+    // EN: Device ID
+    // ID: Device ID
     String deviceID = license.generateDeviceID(PRODUCT_SECRET);
     Serial.println("DeviceID    : " + deviceID);
     Serial.println();
 
-    if (!license.loadLicense())
+    // EN: Load license, u can change file name
+    // ID: Muat lisensi, anda bisa mengganti nama filenya
+    if (!license.loadLicense("/license.json"))
     {
         Serial.println("👀 License not found");
         return;
     }
 
-    if (!license.verifyLicense(PUBLIC_KEY))
+    // EN: HMAC → verification use BearSSL (Recomended for ESP8266)
+    // ID: HMAC → verifikasimenggunakan BearSSL (Direkomendasikan untuk ESP8266)
+    LicenseStatus status = license.verifyLicense(
+        PUBLIC_KEY,      // Your Public crypto key
+        PRODUCT_SECRET); // Device binding secret
+
+    // EN: License is valid
+    // ID: Lisensi valid
+    if (status == FEL_LICENSE_OK)
     {
-        Serial.println("❌ License invalid");
-        return;
+        Serial.println("✅ License Valid");
+    }
+    else
+    {
+        Serial.println("❌ License Invalid");
     }
 
-    if (!license.isLicenseForThisDevice(PRODUCT_SECRET))
-    {
-        Serial.println("❌ License not for this device!");
-        return;
-    }
-
-    Serial.println("✅ License OK (Obfuscated Secret)");
+    // EN: Print license data
+    // ID: Cetak data lisensi
     license.printLicenseData(Serial);
+
+    // EN: End of setup
+    // ID: Akhir dari setup
 }
 
-void loop() {}
+// EN: Loop function
+// ID: Fungsi loop
+void loop()
+{
+    // EN: Main Program Loop
+    // ID: Program Utama Loop
+}

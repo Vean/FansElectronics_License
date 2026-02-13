@@ -4,7 +4,8 @@
   Writer      : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-06
-  Library     : FansElectronics_License v1.0.0
+  Updated     : 2026-02-13
+  Library     : FansElectronics_License v2.0.0
   Website     : https://www.fanselectronics.com
   Repository  : https://github.com/Vean/FansElectronics_License
   Example     : Basic_LIGHT
@@ -12,17 +13,30 @@
   Copyright (c) 2016-2026 Fans Electronics
 ============================================================ */
 
-// EN: Include FansElectronics_License library
-// ID: Masukkan library FansElectronics_License
+// EN: Include FansElectronics_License library & ArduinoJSON
+// ID: Masukkan library FansElectronics_License & ArduinoJSON
+#include <ArduinoJson.h>
 #include <FansElectronics_License.h>
 
 // EN: Define your product secret
 // ID: Definisikan product secret Anda
 #define PRODUCT_SECRET "MY_SECRET"
 
+// EN: Recomendation minimum memory, u can change it
+// ID: Rekomendasi minimal memory, anda bisa memnggantinya
+#define JSON_MEMORY 1024
+
+// EN: Set ESP8266 & ESP32 JSON Memory Type
+// ID: Set  ESP8266 & ESP32 JSON Tipe Memory
+#if defined(ESP8266)
+StaticJsonDocument<JSON_MEMORY> doc;
+#elif defined(ESP32)
+DynamicJsonDocument doc(JSON_MEMORY);
+#endif
+
 // EN: Create FansElectronics_License object in LIGHT mode
 // ID: Buat objek FansElectronics_License dalam mode LIGHT
-FansElectronics_License license(LIGHT);
+FansElectronics_License license(doc, LIGHT); // JSON doc, Encryption Type
 
 //  EN: Setup function
 //  ID: Fungsi setup
@@ -47,31 +61,30 @@ void setup()
   Serial.println("DeviceID    : " + deviceID);
   Serial.println();
 
-  // EN: Load license
-  // ID: Muat lisensi
-  if (!license.loadLicense())
+  // EN: Load license, u can change file name
+  // ID: Muat lisensi, anda bisa mengganti nama filenya
+  if (!license.loadLicense("/license.json"))
   {
     Serial.println("👀 License not found");
     return;
   }
 
-  // EN: LIGHT → skip verifyLicense()
-  // ID: LIGHT → lewati verifyLicense()
+  // EN: LIGHT → verification use Device ID Only
+  // ID: LIGHT → verifikasi hanya menggunakan Device ID saja
+  LicenseStatus status = license.verifyLicense(
+      "",              // no crypto key
+      PRODUCT_SECRET); // device binding secret
 
-  // EN: Check if license is for this device
-  // ID: Periksa apakah lisensi untuk perangkat ini
-  if (!license.isLicenseForThisDevice(PRODUCT_SECRET))
+  // EN: Response License
+  // ID: Respon Lisensi
+  if (status == FEL_LICENSE_OK)
   {
-    // EN: License not for this device
-    // ID: Lisensi bukan untuk perangkat ini
-    Serial.println("❌ License not for this device!");
-    return;
+    Serial.println("✅ License Valid");
   }
-
-  // EN: License is valid
-  // ID: Lisensi valid
-  Serial.println("✅ License OK (LIGHT)");
-  Serial.println();
+  else
+  {
+    Serial.println("❌ License Invalid");
+  }
 
   // EN: Print license data
   // ID: Cetak data lisensi

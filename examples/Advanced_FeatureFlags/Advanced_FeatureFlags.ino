@@ -4,7 +4,8 @@
   Writer      : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-07
-  Library     : FansElectronics_License v1.0.1
+  Updated     : 2026-02-13
+  Library     : FansElectronics_License v2.0.0
   Website     : https://www.fanselectronics.com
   Repository  : https://github.com/Vean/FansElectronics_License
   Example     : Basic_HMAC
@@ -29,8 +30,9 @@
   aman untuk produk komersial Anda.
 ============================================================ */
 
-// EN: Include FansElectronics_License library
-// ID: Masukkan library FansElectronics_License
+// EN: Include FansElectronics_License library & ArduinoJSON
+// ID: Masukkan library FansElectronics_License & ArduinoJSON
+#include <ArduinoJson.h>
 #include <FansElectronics_License.h>
 
 // EN: Define your product secret
@@ -41,9 +43,21 @@
 // ID: Definisikan HMAC secret Anda
 #define HMAC_SECRET "MY_HMAC_SECRET"
 
+// EN: Recomendation minimum memory, u can change it
+// ID: Rekomendasi minimal memory, anda bisa memnggantinya
+#define JSON_MEMORY 1024
+
+// EN: Set ESP8266 & ESP32 JSON Memory Type
+// ID: Set  ESP8266 & ESP32 JSON Tipe Memory
+#if defined(ESP8266)
+StaticJsonDocument<JSON_MEMORY> doc;
+#elif defined(ESP32)
+DynamicJsonDocument doc(JSON_MEMORY);
+#endif
+
 // EN: Create FansElectronics_License object in HMAC mode
 // ID: Buat objek FansElectronics_License dalam mode HMAC
-FansElectronics_License license(HMAC);
+FansElectronics_License license(doc, HMAC); // JSON doc, Encryption Type
 
 // ===== SIMULASI HARDWARE =====
 int installedPanels = 4; // jumlah panel fisik terpasang
@@ -95,31 +109,34 @@ void setup()
     Serial.println("DeviceID : " + deviceID);
     Serial.println();
 
-    // EN: Load license
-    // ID: Muat lisensi
-    if (!license.loadLicense())
+    // EN: Load license, u can change file name
+    // ID: Muat lisensi, anda bisa mengganti nama filenya
+    if (!license.loadLicense("/license.json"))
     {
-        Serial.println("❌ License not found");
+        Serial.println("👀 License not found");
         return;
     }
 
-    // EN: Verify license use method with HMAC secret
-    // ID: Verifikasi lisensi menggunakan metode dengan HMAC secret
-    if (!license.verifyLicense(HMAC_SECRET))
+    // EN: HMAC → verification use BearSSL (Recomended for ESP8266)
+    // ID: HMAC → verifikasimenggunakan BearSSL (Direkomendasikan untuk ESP8266)
+    LicenseStatus status = license.verifyLicense(
+        HMAC_SECRET,     // HMAC crypto key
+        PRODUCT_SECRET); // Device binding secret
+
+    // EN: License is valid
+    // ID: Lisensi valid
+    if (status == FEL_LICENSE_OK)
     {
-        Serial.println("❌ License invalid");
-        return;
+        Serial.println("✅ License Valid");
+    }
+    else
+    {
+        Serial.println("❌ License Invalid");
     }
 
-    // EN: Check if license is for this device
-    // ID: Periksa apakah lisensi untuk perangkat ini
-    if (!license.isLicenseForThisDevice(PRODUCT_SECRET))
-    {
-        Serial.println("❌ License not for this device");
-        return;
-    }
-
-    Serial.println("✅ LICENSE VALID\n");
+    // EN: Print license data
+    // ID: Cetak data lisensi
+    license.printLicenseData(Serial);
 
     // =========================================================
     // FEATURE FLAGS
