@@ -1,25 +1,49 @@
-#######################################
-# FansElectronics License Keywords
-#######################################
+########################################
+# FansElectronics_License Keywords
+########################################
 
-FansElectronics_License	KEYWORD1
+########################################
+# Datatypes (KEYWORD1)
+########################################
+FansElectronics_License	        KEYWORD1
+FEL_DeviceInfo	                KEYWORD1
+LicenseStatus	                KEYWORD1
 
-FEL_DeviceInfo		    KEYWORD1
+########################################
+# Constants (LITERAL1)
+########################################
+LIGHT	                        LITERAL1
+HMAC	                        LITERAL1
+ECDSA	                        LITERAL1
 
-generateDeviceID	    KEYWORD2
-getDeviceInfo		    KEYWORD2
-loadLicense		        KEYWORD2
-verifyLicense		    KEYWORD2
-isLicenseForThisDevice	KEYWORD2
-getLicenseJSON		    KEYWORD2
-getLicensedDeviceID	    KEYWORD2
-getMode			        KEYWORD2
-getString			    KEYWORD2
-getFloat			    KEYWORD2
-getDouble			    KEYWORD2
-printLicenseData	    KEYWORD2
-printDebug		        KEYWORD2
+FEL_LICENSE_OK	                LITERAL1
+FEL_LICENSE_JSON_INVALID	    LITERAL1
+FEL_LICENSE_FILE_NOT_FOUND	    LITERAL1
+FEL_LICENSE_MISSING_DATA_OBJECT	LITERAL1
+FEL_LICENSE_MISSING_SIGNATURE	LITERAL1
+FEL_LICENSE_MISSING_DEVICE_ID	LITERAL1
+FEL_LICENSE_SIGNATURE_INVALID	LITERAL1
+FEL_LICENSE_DEVICE_MISMATCH	    LITERAL1
 
-LIGHT			        LITERAL1
-HMAC			        LITERAL1
-ECDSA			        LITERAL1
+########################################
+# Methods and Functions (KEYWORD2)
+########################################
+loadLicense	                    KEYWORD2
+verifyLicense	                KEYWORD2
+
+getDeviceInfo	                KEYWORD2
+generateDeviceID	            KEYWORD2
+decodeSecret	                KEYWORD2
+parsePublicKeyToString	        KEYWORD2
+
+getString	                    KEYWORD2
+getBool	                        KEYWORD2
+getInt	                        KEYWORD2
+getFloat	                    KEYWORD2
+getDouble	                    KEYWORD2
+hasKey	                        KEYWORD2
+
+printDebug	                    KEYWORD2
+printLicenseData	            KEYWORD2
+getLicenseJSON              	KEYWORD2
+getLicensedDeviceID         	KEYWORD2
