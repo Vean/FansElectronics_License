@@ -25,6 +25,18 @@ FEL_LICENSE_MISSING_DEVICE_ID	LITERAL1
 FEL_LICENSE_SIGNATURE_INVALID	LITERAL1
 FEL_LICENSE_DEVICE_MISMATCH	    LITERAL1
 
+FEL_ID_64BIT	                LITERAL1
+FEL_ID_96BIT	                LITERAL1
+FEL_ID_128BIT	                LITERAL1
+FEL_ID_192BIT	                LITERAL1
+FEL_ID_256BIT	                LITERAL1
+
+FEL_ID_LEN_16	                LITERAL1
+FEL_ID_LEN_24	                LITERAL1
+FEL_ID_LEN_32	                LITERAL1
+FEL_ID_LEN_48	                LITERAL1
+FEL_ID_LEN_64	                LITERAL1
+
 ########################################
 # Methods and Functions (KEYWORD2)
 ########################################
@@ -47,3 +59,8 @@ printDebug	                    KEYWORD2
 printLicenseData	            KEYWORD2
 getLicenseJSON              	KEYWORD2
 getLicensedDeviceID         	KEYWORD2
+
+isValid	                        KEYWORD2
+isLoaded	                    KEYWORD2
+getModeString	                KEYWORD2
+getLibraryVersion	            KEYWORD2
