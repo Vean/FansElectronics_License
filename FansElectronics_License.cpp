@@ -66,6 +66,7 @@ bool FansElectronics_License::loadLicense(const char *path)
 // =====================================================
 LicenseStatus FansElectronics_License::verifyLicense(const char *cryptoKey,
                                                      String productSecret,
+                                                     uint8_t idLength,
                                                      bool useFlashSize)
 {
   if (!_licenseLoaded)
@@ -82,7 +83,7 @@ LicenseStatus FansElectronics_License::verifyLicense(const char *cryptoKey,
     return FEL_LICENSE_SIGNATURE_INVALID;
 
   if (productSecret.length() > 0)
-    if (!isLicenseForDevice(productSecret, useFlashSize))
+    if (!isLicenseForDevice(productSecret, idLength, useFlashSize))
       return FEL_LICENSE_DEVICE_MISMATCH;
 
   _licenseVerified = true;
@@ -111,22 +112,43 @@ FEL_DeviceInfo FansElectronics_License::getDeviceInfo()
 }
 
 // =====================================================
-// DEVICE ID GENERATOR
+// DEVICE ID GENERATOR (CONFIGURABLE LENGTH)
 // =====================================================
-String FansElectronics_License::generateDeviceID(String secret, bool useFlashSize)
+String FansElectronics_License::generateDeviceID(String secret,
+                                                 uint8_t idLength,
+                                                 bool useFlashSize)
 {
+  // ---- Safety clamp ----
+  if (idLength < 16)
+    idLength = 16;
+  if (idLength > 64)
+    idLength = 64;
+  if (idLength % 2 != 0)
+    idLength++; // must be even
+
+  uint8_t bytesToUse = idLength / 2;
+
   FEL_DeviceInfo info = getDeviceInfo();
-  String input = info.chipModel + info.mac;
+
+  // fingerprint = CHIP + MAC + FLASH + SECRET
+  String input = info.chipModel;
+  input += info.mac;
+
   if (useFlashSize)
     input += info.flashSize;
+
   input += secret;
 
   uint8_t hash[32];
   FEL_sha256(input, hash);
 
+  // convert to HEX (custom length)
   char out[65];
-  for (int i = 0; i < 32; i++)
+
+  for (int i = 0; i < bytesToUse; i++)
     sprintf(out + i * 2, "%02X", hash[i]);
+
+  out[bytesToUse * 2] = '\0';
 
   return String(out);
 }
@@ -142,12 +164,14 @@ bool FansElectronics_License::verifySignature(const char *key)
 }
 
 // =====================================================
-// Check License for this Device ID
+// CHECK IF LICENSE IS FOR THIS DEVICE (CONFIGURABLE ID LENGTH)
 // =====================================================
-bool FansElectronics_License::isLicenseForDevice(String secret, bool useFlashSize)
+bool FansElectronics_License::isLicenseForDevice(String secret,
+                                                 uint8_t idLength,
+                                                 bool useFlashSize)
 {
   String licensedID = getLicensedDeviceID();
-  String currentID = generateDeviceID(secret, useFlashSize);
+  String currentID = generateDeviceID(secret, idLength, useFlashSize);
   return licensedID == currentID;
 }
 

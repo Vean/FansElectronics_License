@@ -31,8 +31,24 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
+// --- Library Version ---
 #define FEL_VERSION "2.0.0"
 
+// --- Bit strength naming (recommended) ---
+#define FEL_ID_64BIT 16
+#define FEL_ID_96BIT 24
+#define FEL_ID_128BIT 32 // ⭐ Default
+#define FEL_ID_192BIT 48
+#define FEL_ID_256BIT 64
+
+// --- Character length alias (for convenience) ---
+#define FEL_ID_LEN_16 FEL_ID_64BIT
+#define FEL_ID_LEN_24 FEL_ID_96BIT
+#define FEL_ID_LEN_32 FEL_ID_128BIT
+#define FEL_ID_LEN_48 FEL_ID_192BIT
+#define FEL_ID_LEN_64 FEL_ID_256BIT
+
+// --- Encrytion Type ---
 #define LIGHT 0
 #define HMAC 1
 #define ECDSA 2
@@ -69,11 +85,12 @@ public:
   bool loadLicense(const char *path = "/license.json");
   LicenseStatus verifyLicense(const char *cryptoKey,
                               String productSecret = "",
+                              uint8_t idLength = FEL_ID_128BIT,
                               bool useFlashSize = true);
 
   // ===== Device tools =====
   FEL_DeviceInfo getDeviceInfo();
-  String generateDeviceID(String secret, bool useFlashSize = true);
+  String generateDeviceID(String secret, uint8_t idLength = FEL_ID_128BIT, bool useFlashSize = true);
   String decodeSecret(const uint8_t *data, size_t len, uint8_t xorKey);
   String parsePublicKeyToString(const char *key);
 
@@ -101,5 +118,5 @@ private:
   String licenseSignature;
 
   bool verifySignature(const char *key);
-  bool isLicenseForDevice(String secret, bool useFlashSize);
+  bool isLicenseForDevice(String secret, uint8_t idLength, bool useFlashSize);
 };
