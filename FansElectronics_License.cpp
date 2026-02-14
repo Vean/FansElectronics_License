@@ -418,3 +418,41 @@ String FansElectronics_License::decodeSecret(const uint8_t *data, size_t len, ui
   decoded[len] = '\0';
   return String(decoded);
 }
+
+// =====================================================
+// Check license verification result
+// =====================================================
+bool FansElectronics_License::isValid()
+{
+  return _licenseVerified;
+}
+
+// =====================================================
+// Check license loaded state
+// =====================================================
+bool FansElectronics_License::isLoaded()
+{
+  return !licenseDataString.isEmpty();
+}
+
+// =====================================================
+// Get mode as readable string
+// =====================================================
+String FansElectronics_License::getModeString()
+{
+  if (_mode == LIGHT)
+    return "LIGHT";
+  if (_mode == HMAC)
+    return "HMAC";
+  if (_mode == ECDSA)
+    return "ECDSA";
+  return "UNKNOWN";
+}
+
+// =====================================================
+// Get library version
+// =====================================================
+String FansElectronics_License::getLibraryVersion()
+{
+  return FEL_VERSION;
+}

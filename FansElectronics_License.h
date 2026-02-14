@@ -16,6 +16,7 @@
   - Hybrid JSON memory model (user allocates memory)
   - ArduinoJson v6 public dependency
   - Compatible workflow with v1 (loadLicense, getters, debug)
+  - Configurable Device ID length
 
 ============================================================ */
 
@@ -101,7 +102,10 @@ public:
   float getFloat(const char *key, float defaultVal = 0);
   double getDouble(const char *key, double defaultVal = 0);
   bool hasKey(const char *key);
-
+  bool isValid();
+  bool isLoaded();
+  String getModeString();
+  String getLibraryVersion();
   void printDebug(Stream &s);
   void printLicenseData(Stream &s);
 
