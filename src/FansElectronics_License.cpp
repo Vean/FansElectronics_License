@@ -3,6 +3,8 @@
 
 #if defined(ESP32)
 #include "mbedtls/sha256.h"
+#include "mbedtls/base64.h"
+#include "mbedtls/pk.h"
 #include "esp_chip_info.h"
 #include "esp_spi_flash.h"
 #elif defined(ESP8266)
@@ -11,18 +13,109 @@
 #endif
 
 // =====================================================
-// SHA256 helper
+// SIMPLE BASE64 DECODER (untuk signature)
 // =====================================================
-void FEL_sha256(const String &input, uint8_t output[32])
+static const unsigned char b64_table[65] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+int FEL_base64_decode(uint8_t *out, const char *in, int len)
+{
+  int j = 0;
+  int val = 0, valb = -8;
+
+  for (int k = 0; k < len; k++)
+  {
+    unsigned char c = in[k];
+    if (c == '=' || c == '\n' || c == '\r')
+      break;
+
+    const char *p = strchr((const char *)b64_table, c);
+    if (!p)
+      continue;
+
+    val = (val << 6) + (p - (const char *)b64_table);
+    valb += 6;
+
+    if (valb >= 0)
+    {
+      out[j++] = (val >> valb) & 0xFF;
+      valb -= 8;
+    }
+  }
+  return j;
+}
+
+// =====================================================
+// Delay anti tempering (misalnya saat verifikasi gagal)
+// =====================================================
+void FEL_securityDelay()
+{
+  // Delay anti tempering, 2 seconds
+  delay(3000);
+}
+
+// =====================================================
+// SHA256 helper (Aman untuk Data Biner / Tanpa String)
+// =====================================================
+void FEL_sha256_binary(const uint8_t *input, size_t length, uint8_t output[32])
 {
 #if defined(ESP32)
-  mbedtls_sha256((const unsigned char *)input.c_str(), input.length(), output, 0);
+  mbedtls_sha256(input, length, output, 0);
 #else
   br_sha256_context ctx;
   br_sha256_init(&ctx);
-  br_sha256_update(&ctx, input.c_str(), input.length());
+  br_sha256_update(&ctx, input, length);
   br_sha256_out(&ctx, output);
 #endif
+}
+
+// Wrapper tetap dipertahankan agar tidak merusak fungsi lama Anda
+void FEL_sha256(const String &input, uint8_t output[32])
+{
+  FEL_sha256_binary((const uint8_t *)input.c_str(), input.length(), output);
+}
+
+// =====================================================
+// HMAC SHA256 (VERSI PERBAIKAN - AMAN KARAKTER '6' / 0x00)
+// =====================================================
+void FEL_hmac_sha256(const String &key, const String &message, uint8_t out[32])
+{
+  const uint8_t blockSize = 64;
+  uint8_t keyBlock[blockSize];
+  memset(keyBlock, 0, blockSize);
+
+  if (key.length() > blockSize)
+  {
+    FEL_sha256(key, keyBlock);
+  }
+  else
+  {
+    memcpy(keyBlock, key.c_str(), key.length());
+  }
+
+  uint8_t o_key_pad[blockSize];
+  uint8_t i_key_pad[blockSize];
+
+  for (int i = 0; i < blockSize; i++)
+  {
+    o_key_pad[i] = keyBlock[i] ^ 0x5c;
+    i_key_pad[i] = keyBlock[i] ^ 0x36;
+  }
+
+  size_t innerLen = blockSize + message.length();
+  uint8_t innerBuf[innerLen];
+  memcpy(innerBuf, i_key_pad, blockSize);
+  memcpy(innerBuf + blockSize, message.c_str(), message.length());
+
+  uint8_t innerHash[32];
+  FEL_sha256_binary(innerBuf, innerLen, innerHash); // 🟢 Menggunakan penanganan biner murni
+
+  size_t outerLen = blockSize + 32;
+  uint8_t outerBuf[outerLen];
+  memcpy(outerBuf, o_key_pad, blockSize);
+  memcpy(outerBuf + blockSize, innerHash, 32);
+
+  FEL_sha256_binary(outerBuf, outerLen, out); // 🟢 Menggunakan penanganan biner murni
 }
 
 // =====================================================
@@ -69,6 +162,9 @@ LicenseStatus FansElectronics_License::verifyLicense(const char *cryptoKey,
                                                      uint8_t idLength,
                                                      bool useFlashSize)
 {
+  if (_licenseVerified)
+    return FEL_LICENSE_OK;
+
   if (!_licenseLoaded)
     return FEL_LICENSE_JSON_INVALID;
 
@@ -156,11 +252,91 @@ String FansElectronics_License::generateDeviceID(String secret,
 // =====================================================
 // VERIFY SIGNATURE (HMAC mode)
 // =====================================================
+// =====================================================
+// VERIFY SIGNATURE (Fixed v2.0.0 - Integration Mode)
+// =====================================================
 bool FansElectronics_License::verifySignature(const char *key)
 {
+  // 1. Jika mode LIGHT, signature tidak diverifikasi secara kriptografi
+  if (_mode == LIGHT)
+  {
+    return true;
+  }
+
+  if (licenseSignature.isEmpty() || !key || strlen(key) == 0)
+    return false;
+
+  // 2. Buat Hash SHA256 dari data lisensi (diperlukan baik untuk HMAC maupun ECDSA)
   uint8_t hash[32];
   FEL_sha256(licenseDataString, hash);
-  return licenseSignature.length() > 10; // simplified stub (same logic bisa ditambah ECDSA lagi)
+
+  // 3. Decode signature berformat Base64 (menggunakan decoder bawaan v1.1.0 Anda)
+  uint8_t sig[128];
+  int sig_len = FEL_base64_decode(sig, licenseSignature.c_str(), licenseSignature.length());
+
+  // ================= HMAC MODE (Khusus ESP8266 / Fallback) =================
+  if (_mode == HMAC)
+  {
+    uint8_t calc[32];
+    FEL_hmac_sha256(String(key), licenseDataString, calc);
+
+    if (sig_len != 32)
+    {
+      FEL_securityDelay();
+      return false;
+    }
+
+    for (int i = 0; i < 32; i++)
+    {
+      if (sig[i] != calc[i])
+      {
+        FEL_securityDelay();
+        return false;
+      }
+    }
+    return true; // HMAC Valid
+  }
+
+  // ================= ECDSA MODE (Khusus ESP32) =================
+#if defined(ESP32)
+  if (_mode == ECDSA)
+  {
+    mbedtls_pk_context pk;
+    mbedtls_pk_init(&pk);
+
+    // Parse Public Key PEM yang dimasukkan pengguna
+    if (mbedtls_pk_parse_public_key(&pk,
+                                    (const unsigned char *)key,
+                                    strlen(key) + 1) != 0)
+    {
+      mbedtls_pk_free(&pk);
+      FEL_securityDelay();
+      return false; // Gagal membaca Public Key
+    }
+
+    // Lakukan verifikasi ECDSA yang sesungguhnya
+    int ret = mbedtls_pk_verify(&pk,
+                                MBEDTLS_MD_SHA256,
+                                hash, 0,
+                                sig, sig_len);
+
+    mbedtls_pk_free(&pk);
+
+    if (ret == 0)
+    {
+      return true; // ECDSA Valid!
+    }
+    else
+    {
+      FEL_securityDelay();
+      return false; // Signature tidak cocok / data telah diotak-atik
+    }
+  }
+#endif
+
+  // Jika masuk ke sini (misal memilih ECDSA di ESP8266), kunci ditolak
+  FEL_securityDelay();
+  return false;
 }
 
 // =====================================================
