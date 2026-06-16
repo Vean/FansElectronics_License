@@ -27,7 +27,7 @@
         "type": "git",
         "url": "https://github.com/Vean/FansElectronics_License.git"
     },
-    "homepage": "https://github.com/Vean/FansElectronics_License",
+    "homepage": "https://www.fanselectronics.com",
     "frameworks": "arduino",
     "platforms": [
         "espressif8266",
@@ -35,5 +35,6 @@
     ],
     "dependencies": {
         "bblanchon/ArduinoJson": "^6.21.5"
-    }
+    },
+    "license": "MIT"
 }
