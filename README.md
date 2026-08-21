@@ -74,7 +74,7 @@ Benefits:
 | HMAC | ESP32 & ESP8266 | ⭐⭐⭐ | Secret-key signature (Authenticity) | ✅ Implemented |
 | ECDSA | ESP32 | ⭐⭐⭐⭐ | Public-key signature (High Authenticity) | ✅ Implemented |
 | LIGHT_AES | ESP32 & ESP8266 | ⭐⭐⭐ | Device binding + AES Encrypted payload only (Confidentiality)) | ✅ Implemented |
-| HMHMAC_AESAC | ESP32 & ESP8266 | ⭐⭐⭐⭐⭐ | Encrypt-then-MAC (Confidentiality + Secret-key) | ✅ Implemented |
+| HMAC_AES | ESP32 & ESP8266 | ⭐⭐⭐⭐⭐ | Encrypt-then-MAC (Confidentiality + Secret-key) | ✅ Implemented |
 | ECDSA_AES | ESP32 | ⭐⭐⭐⭐⭐⭐ | Ultimate (Confidentiality + Public-key) | ✅ Implemented |
 | ED25519 | ESP32 | ⭐⭐⭐⭐⭐ | Signature modern public key (ESP32 Core > 3.X) | 🚧 Next Update? |
 
