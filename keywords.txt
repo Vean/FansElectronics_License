@@ -12,9 +12,12 @@ LicenseStatus	                KEYWORD1
 ########################################
 # Constants (LITERAL1)
 ########################################
-LIGHT	                        LITERAL1
-HMAC	                        LITERAL1
-ECDSA	                        LITERAL1
+FEL_MODE_LIGHT	                LITERAL1
+FEL_MODE_HMAC	                LITERAL1
+FEL_MODE_ECDSA	                LITERAL1
+FEL_MODE_LIGHT_AES              LITERAL1
+FEL_MODE_HMAC_AES               LITERAL1
+FEL_MODE_ECDSA_AES              LITERAL1
 
 FEL_LICENSE_OK	                LITERAL1
 FEL_LICENSE_JSON_INVALID	    LITERAL1

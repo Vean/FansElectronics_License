@@ -50,10 +50,12 @@
 #define FEL_ID_LEN_64 FEL_ID_256BIT
 
 // --- Encrytion Type ---
-#define LIGHT 0
-#define HMAC 1
-#define ECDSA 2
-
+#define FEL_MODE_LIGHT 0
+#define FEL_MODE_HMAC 1
+#define FEL_MODE_ECDSA 2
+#define FEL_MODE_LIGHT_AES 3
+#define FEL_MODE_HMAC_AES 4
+#define FEL_MODE_ECDSA_AES 5
 // =========================================================
 // License verification result (GLOBAL ENUM)
 // =========================================================
@@ -80,7 +82,7 @@ class FansElectronics_License
 {
 public:
   // Constructor now receives JsonDocument from user
-  FansElectronics_License(JsonDocument &doc, uint8_t mode = HMAC);
+  FansElectronics_License(JsonDocument &doc, uint8_t mode = FEL_MODE_HMAC);
 
   // ===== Core workflow (compatible with v1) =====
   bool loadLicense(const char *path = "/license.json");

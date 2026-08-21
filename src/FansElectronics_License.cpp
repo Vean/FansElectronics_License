@@ -125,7 +125,7 @@ FansElectronics_License::FansElectronics_License(JsonDocument &doc, uint8_t mode
     : _doc(doc)
 {
 #if defined(ESP8266)
-  _mode = (mode == ECDSA) ? HMAC : mode;
+  _mode = (mode == FEL_MODE_ECDSA) ? FEL_MODE_HMAC : mode;
 #else
   _mode = mode;
 #endif
@@ -258,7 +258,7 @@ String FansElectronics_License::generateDeviceID(String secret,
 bool FansElectronics_License::verifySignature(const char *key)
 {
   // 1. Jika mode LIGHT, signature tidak diverifikasi secara kriptografi
-  if (_mode == LIGHT)
+  if (_mode == FEL_MODE_LIGHT)
   {
     return true;
   }
@@ -275,7 +275,7 @@ bool FansElectronics_License::verifySignature(const char *key)
   int sig_len = FEL_base64_decode(sig, licenseSignature.c_str(), licenseSignature.length());
 
   // ================= HMAC MODE (Khusus ESP8266 / Fallback) =================
-  if (_mode == HMAC)
+  if (_mode == FEL_MODE_HMAC)
   {
     uint8_t calc[32];
     FEL_hmac_sha256(String(key), licenseDataString, calc);
@@ -299,7 +299,7 @@ bool FansElectronics_License::verifySignature(const char *key)
 
   // ================= ECDSA MODE (Khusus ESP32) =================
 #if defined(ESP32)
-  if (_mode == ECDSA)
+  if (_mode == FEL_MODE_ECDSA)
   {
     mbedtls_pk_context pk;
     mbedtls_pk_init(&pk);
@@ -616,11 +616,11 @@ bool FansElectronics_License::isLoaded()
 // =====================================================
 String FansElectronics_License::getModeString()
 {
-  if (_mode == LIGHT)
+  if (_mode == FEL_MODE_LIGHT)
     return "LIGHT";
-  if (_mode == HMAC)
+  if (_mode == FEL_MODE_HMAC)
     return "HMAC";
-  if (_mode == ECDSA)
+  if (_mode == FEL_MODE_ECDSA)
     return "ECDSA";
   return "UNKNOWN";
 }

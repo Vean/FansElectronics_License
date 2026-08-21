@@ -4,8 +4,8 @@
   Writer      : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-06
-  Updated     : 2026-02-13
-  Library     : FansElectronics_License v2.0.0
+  Updated     : 2026-08-21
+  Library     : FansElectronics_License v2.1.0
   Website     : https://www.fanselectronics.com
   Repository  : https://github.com/Vean/FansElectronics_License
   Example     : Basic_HMAC
@@ -40,7 +40,7 @@ DynamicJsonDocument doc(JSON_MEMORY);
 
 // EN: Create FansElectronics_License object in HMAC mode
 // ID: Buat objek FansElectronics_License dalam mode HMAC
-FansElectronics_License license(doc, HMAC); // JSON doc, Encryption Type
+FansElectronics_License license(doc, FEL_MODE_HMAC); // JSON doc, Encryption Type
 
 //  EN: Setup function
 //  ID: Fungsi setup
