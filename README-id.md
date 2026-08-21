@@ -1,93 +1,111 @@
 # FansElectronics_License
 
-[🇬🇧 English](README.md)
+[🇺🇸 English Version](README.md)
 
 ---
 
 ## Deskripsi 📖
-**FansElectronics License** adalah library Arduino yang dirancang untuk membuat sistem lisensi **offline** pada perangkat **ESP32 dan ESP8266**.
+**FansElectronics License** adalah pustaka (library) Arduino yang dirancang untuk mengimplementasikan sistem lisensi offline bagi perangkat **ESP32 dan ESP8266**.
 
-Library ini membantu developer IoT dan produsen hardware untuk:
-- Mengunci firmware ke hardware tertentu
+Pustaka ini membantu pengembang IoT dan produsen perangkat keras untuk:
+- Mengunci firmware pada perangkat keras tertentu
 - Mengaktifkan fitur berdasarkan lisensi
-- Mencegah cloning perangkat
+- Mencegah kloning perangkat
 - Memverifikasi lisensi tanpa koneksi internet
+- (BARU) Mengenkripsi data payload untuk melindungi rahasia komersial
+
+Telah diuji pada Arduino **ESP32 Core 2.0.17** (Direkomendasikan), Wemos D1 Mini (ESP8266), ESP32 DevKit, ESP32S, ESP32-S3.
 
 ---
 
-## Perubahan di v2.0.0 🚀
+## Apa yang Baru di v2.1.0 🚀
 
-Pembaruan besar berfokus pada **stabilitas memori dan kemudahan penggunaan**.
+Pembaruan baru berfokus pada **Kerahasiaan Payload (AES-256-CBC)** untuk mengenkripsi payload JSON secara menyeluruh.
+<p align="justify">AES dalam pustaka ini <b>bukanlah</b> mode tanda tangan (signature) yang berdiri sendiri. Sebaliknya, AES berfungsi sebagai lapisan enkripsi yang dikombinasikan dengan mode tanda tangan kami (arsitektur Encrypt-then-MAC). Sebagai contoh, menggabungkan AES dengan ECDSA akan menghasilkan FEL_MODE_ECDSA_AES.</p>
+<small><b>Catatan:</b> Jika Anda ingin menjalankan AES sebagai enkripsi mandiri tanpa validasi tanda tangan kriptografis apa pun, itulah fungsi dari <b>FEL_MODE_LIGHT_AES</b>!</small>
 
-### Breaking change (perubahan 1 baris)
+### Perubahan yang memengaruhi kode lama (migrasi satu baris)`
 ```cpp
 // v1.x
 FansElectronics_License license(HMAC);
 
-// v2.0.0
-StaticJsonDocument<1024> doc;   // ESP8266
-DynamicJsonDocument doc(1024);  // ESP32
+// v2.0.X
+StaticJsonDocument<1024> doc; // ESP8266
+DynamicJsonDocument doc(1024); // ESP32
 FansElectronics_License license(doc, HMAC);
+
+// v2.1.X
+FansElectronics_License license(doc, FEL_MODE_HMAC);
+LicenseStatus status = license.verifyLicense(
+HMAC_SECRET,     // Kunci Publik (ECDSA) atau HMAC Secret
+PRODUCT_SECRET,  // Secret untuk pengikatan perangkat (device binding)
+FEL_ID_LEN_64,   // Panjang ID
+true,            // Gunakan Ukuran Flash
+AES_SECRET       // (BARU) Kunci Dekripsi AES
+);
 ```
 
-### Kenapa perubahan ini?
-Sebelumnya ukuran memori JSON dikunci di dalam library.  
-Sekarang **user mengontrol alokasi memori sendiri**, sehingga library lebih stabil untuk project produksi.
+### Mengapa ada perubahan ini?
+Sebelumnya, ukuran memori JSON ditetapkan secara statis di dalam pustaka (library).
+Sekarang **pengguna dapat mengatur ukuran memori**, menjadikan pustaka ini stabil untuk proyek produksi.
 
-Keuntungan:
-- Tidak perlu mengedit source library lagi
-- Lebih aman untuk heap ESP8266
-- Lebih scalable untuk project besar
-
+Manfaat:
+- Tidak perlu lagi mengubah kode sumber pustaka
+- Lebih aman bagi heap ESP8266
+- Dapat diskalakan untuk proyek besar
+- (BARU) Dukungan enkripsi payload AES-256-CBC
 ---
 
 ## Fitur ✨
-- Device ID unik berbasis hardware
-- Verifikasi lisensi offline
-- Multi mode enkripsi (LIGHT, HMAC, ECDSA)
-- Mendukung ESP32 & ESP8266
+- ID Perangkat unik berbasis perangkat keras
+- Verifikasi lisensi secara offline
+- Berbagai mode enkripsi (LIGHT, HMAC, ECDSA, AES)
+- Mendukung ESP32 dan ESP8266
 - Format lisensi berbasis JSON
-- Tools generator lisensi (CLI & Web)
+- Alat pembuat lisensi (CLI & Web)
 - Arsitektur siap produksi
 
 ---
-
 ## Mode Keamanan 🔒
 
 | Mode | Platform | Keamanan | Deskripsi | Status |
 |---|---|---|---|---|
-| LIGHT | ESP32 & ESP8266 | ⭐ | Binding perangkat saja | ✅ Implemented |
-| HMAC | ESP32 & ESP8266 | ⭐⭐⭐ | Signature berbasis secret key | ✅ Implemented |
-| ECDSA | ESP32 | ⭐⭐⭐⭐⭐ | Kriptografi public key | ✅ Implemented |
-| AES | ESP32 & ESP8266 | ⭐⭐⭐⭐ | Enkripsi file lisensi (kerahasiaan) | 🚧 Next Update |
-| Ed25519 | ESP32 & ESP8266 | ⭐⭐⭐⭐⭐ | Signature modern public key | 🚧 Next Update |
+| LIGHT | ESP32 & ESP8266 | ⭐😅 | Hanya pengikatan perangkat (Tanpa kriptografi) | ✅ Diimplementasikan |
+| HMAC | ESP32 & ESP8266 | ⭐⭐⭐ | Tanda tangan kunci rahasia (Otentisitas) | ✅ Diimplementasikan |
+| ECDSA | ESP32 | ⭐⭐⭐⭐ | Tanda tangan kunci publik (Otentisitas tinggi) | ✅ Diimplementasikan |
+| LIGHT_AES | ESP32 & ESP8266 | ⭐⭐⭐ | Pengikatan perangkat + Payload terenkripsi AES saja (Kerahasiaan) | ✅ Diimplementasikan |
+| HMAC_AES | ESP32 & ESP8266 | ⭐⭐⭐⭐⭐ | Encrypt-then-MAC (Kerahasiaan + Kunci rahasia) | ✅ Diimplementasikan |
+| ECDSA_AES | ESP32 | ⭐⭐⭐⭐⭐⭐ | Tingkat tertinggi (Kerahasiaan + Kunci publik) | ✅ Diimplementasikan |
+| ED25519 | ESP32 | ⭐⭐⭐⭐⭐ | Tanda tangan kunci publik modern (ESP32 Core > 3.X) | 🚧 Pembaruan Berikutnya? |
 
-Sangat cocok untuk:
+
+Cocok untuk:
 - Produk IoT komersial
-- Sistem LED controller / display
-- Perangkat offline 24/7
-- Hardware OEM / produksi massal
+- Pengontrol LED / sistem tampilan
+- Perangkat offline yang beroperasi 24/7
+- Perangkat keras OEM / produksi massal
 
 ---
 
-## Kebutuhan ArduinoJson ⚠️
-Library ini menggunakan **ArduinoJson v6.21.5**.
+## Persyaratan ArduinoJson ⚠️
+Pustaka ini menggunakan **ArduinoJson v6.21.5**.
 
-Kenapa bukan ArduinoJson v7?
-- ESP8266 membutuhkan alokasi memori yang statik (ditentukan diawal)
-- v7 menggunakan alokasi heap dinamis
-- Memory pool tetap pada v6 lebih stabil untuk perangkat IoT jangka panjang
+Mengapa bukan ArduinoJson v7?
+- ESP8266 memerlukan alokasi memori yang deterministik
+- v7 menggunakan alokasi *heap* dinamis
+- *Fixed memory pool* pada v6 lebih stabil untuk perangkat IoT yang beroperasi dalam jangka waktu lama
+<small><b>Catatan:</b> Jika menggunakan <b>ESP32</b>, tidak masalah menggunakan ArduinoJson V7.</small>
 
 ---
 
 ## Cara Kerja ❓
 
-1️⃣ Perangkat membuat **Device ID unik**  
-2️⃣ Developer membuat file `license.json` menggunakan generator  
+1️⃣ Perangkat menghasilkan **Device ID** yang unik  
+2️⃣ Pengembang membuat `license.json` menggunakan alat generator  
 3️⃣ Lisensi disimpan di LittleFS  
-4️⃣ Firmware memverifikasi lisensi saat boot  
+4️⃣ Firmware memverifikasi lisensi saat *booting*
 
-Lisensi valid → fitur aktif  
+Lisensi valid → fitur diaktifkan
 Lisensi tidak valid → perangkat terkunci
 
 ---
@@ -96,41 +114,28 @@ Lisensi tidak valid → perangkat terkunci
 
 ```json
 {
-  "data": {
-    "device_id": "ABC123",
-    "product": "PRODUCT NAME",
-    "serial": "SN001",
-    "panel": 64
-  },
-  "signature": "BASE64_SIGNATURE"
+"data": {
+"device_id": "ABC123",
+"product": "PRODUCT NAME",
+"serial": "SN001",
+"panel": 64
+},
+"signature": "BASE64_SIGNATURE"
 }
 ```
-
----
-
-## Perbandingan Performa ESP (Estimasi) 📊
-
-| Mode | RAM ESP8266 | RAM ESP32 | Kecepatan ESP8266 | Kecepatan ESP32 | Ukuran Lisensi |
-|---|---|---|---|---|---|
-| LIGHT | ~1 KB | ~1 KB | < 1 ms | < 1 ms | Sangat kecil |
-| HMAC-SHA256 | ~4–6 KB | ~3–4 KB | ~5–10 ms | ~2–4 ms | Kecil |
-| ECDSA-P256 | Tidak support | ~12–16 KB | Tidak support | ~20–40 ms | Sedang |
-| AES-256 | ~4–6 KB | ~2–3 KB (HW accel) | ~8–15 ms | ~1–2 ms | Terenkripsi |
-| Ed25519 | ~10–14 KB | ~8–12 KB | ~40–80 ms | ~8–15 ms | Kecil |
-
 ---
 
 ## Dibuat Oleh 💻
 - Penulis           : Irfan Indra Kurniawan, ST
 - Organisasi        : Fans Electronics
-- Website           : www.fanselectronics.com
+- Situs Web         : www.fanselectronics.com
 - Email             : info@fanselectronics.com
 
-> **Catatan Penulis:** Silakan gunakan dan kembangkan library ini untuk pendidikan, pribadi, ibadah, maupun komersial.
+> **Catatan penulis:** Silakan kembangkan dan gunakan pustaka ini untuk tujuan pendidikan, pribadi, keagamaan, maupun komersial.
 
 ---
 
-## Buy me a Coffee ☕
+## Traktir Kopi ☕
 - info@fanselectronics.com
 - www.facebook.com/FansElectronicsCom
 - www.instagram.com/fanselectronics
@@ -138,9 +143,9 @@ Lisensi tidak valid → perangkat terkunci
 
 ---
 
-## Terima Kasih 🤲
+## Terima Kasih Kepada 🤲
 - Allah Subhanahu Wa Ta'ala
 - Arduino.cc
 - GitHub
-- Contributor
-- Semua yang memberi saya kopi ☕
+- Kontributor
+- Semua orang yang mentraktir saya kopi
