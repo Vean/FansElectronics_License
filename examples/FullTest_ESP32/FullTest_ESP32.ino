@@ -61,9 +61,13 @@ DynamicJsonDocument doc(JSON_MEMORY);
 // ID: Inisialisasi Objek License
 FansElectronics_License license(doc, FEL_CURRENT_MODE);
 
-// EN: Setup function
-// ID: Fungsi setup
-void setup()
+// EN: Variable status code
+// ID: Variable dari kode status
+LicenseStatus status
+
+    // EN: Setup function
+    // ID: Fungsi setup
+    void setup()
 {
   // EN: Start Serial communication
   // ID: Mulai komunikasi Serial
@@ -111,7 +115,7 @@ void setup()
 
   // EN: Execution Verification
   // ID: --- Verifikasi Eksekusi ---
-  LicenseStatus status = license.verifyLicense(
+  status = license.verifyLicense(
       // EN: Automatically use PUBLIC_KEY or HMAC_SECRET
       // ID: Otomatis pakai PUBLIC_KEY atau HMAC_SECRET
       activeCryptoKey,
@@ -145,4 +149,22 @@ void setup()
 
 // EN: Loop function
 // ID: Fungsi loop
-void loop() {}
+void loop()
+{ // EN: License Valid (Access Granted)
+  // ID: License Valid (Akses Diberikan)
+  if (status == FEL_LICENSE_OK)
+  {
+    Serial.println("✅ License Valid (Akses Diberikan)");
+  }
+  // EN: License Invalid! Error Code:
+  // ID: License Invalid! Error Code:
+  else
+  {
+    Serial.print("❌ License Invalid! Error Code: ");
+    Serial.println(status);
+  }
+
+  // EN: Delay for 1 second
+  // ID: Delay selama 1 detik
+  delay(1000);
+}

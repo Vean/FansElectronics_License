@@ -50,6 +50,10 @@ StaticJsonDocument<JSON_MEMORY> doc;
 // ID: Inisialisasi Objek License
 FansElectronics_License license(doc, FEL_CURRENT_MODE);
 
+// EN: Variable status code
+// ID: Variable dari kode status
+LicenseStatus status;
+
 // EN: Setup function
 // ID: Fungsi setup
 void setup()
@@ -93,7 +97,7 @@ void setup()
 
   // EN: Execution Verification (BearSSL)
   // ID: --- Verifikasi Eksekusi (BearSSL) ---
-  LicenseStatus status = license.verifyLicense(
+  status = license.verifyLicense(
       // EN: ESP8266 purely uses HMAC Secret for its signature
       // ID: ESP8266 murni menggunakan HMAC Secret untuk stempelnya
       HMAC_SECRET,
@@ -127,4 +131,22 @@ void setup()
 
 // EN: Loop function
 // ID: Fungsi loop
-void loop() {}
+void loop()
+{ // EN: License Valid (Access Granted)
+  // ID: License Valid (Akses Diberikan)
+  if (status == FEL_LICENSE_OK)
+  {
+    Serial.println("✅ License Valid (Akses Diberikan)");
+  }
+  // EN: License Invalid! Error Code:
+  // ID: License Invalid! Error Code:
+  else
+  {
+    Serial.print("❌ License Invalid! Error Code: ");
+    Serial.println(status);
+  }
+
+  // EN: Delay for 1 second
+  // ID: Delay selama 1 detik
+  delay(1000);
+}
