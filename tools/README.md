@@ -1,40 +1,74 @@
-# FansElectronics_License
+# 🛠️ FansElectronics License Generator
 
 [🇮🇩 Bahasa Indonesia](README-ID.md)
 
 ---
 
-# 🛠️ License Generator Tools (Offline License System)
+# 🚀 FEL Generator (Windows Desktop App)
 
-**FansElectronics_License** provides tools to generate `license.json` files **offline** without needing a server.
+The primary license generator is the **FEL Generator.exe** desktop application, designed to run natively on Windows.
 
-This allows developers to:
-- Lock firmware to hardware
-- Enable paid features
-- Prevent device cloning
-- Run licensing without internet
+![FEL Generator](FEL_Generator.png)
+
+## ✨ Features
+
+- Simple and user-friendly GUI
+- Portable (no installation required)
+- No PHP or additional frameworks needed
+- 100% Offline operation
+- Generate, copy, and save `license.json` with a single click
+
+## How to Use
+
+1. Download **FEL Generator.exe** from the **Releases** page or the **tools** folder.
+2. Run the application.
+3. On the first launch, the application automatically creates:
+
+```text
+config.json
+private_key.pem
+public_key.pem
+```
+
+4. Replace the contents of `private_key.pem` with your **ECDSA Private Key** (or generate one first using `generate_keys.sh`).
+5. Enter the **Device ID**.
+6. Select the encryption mode.
+7. Click **Generate License**.
+8. Save the generated file as `license.json`.
+
+## Application Configuration
+
+Before generating licenses, make sure the default configuration matches your Arduino firmware, especially the **HMAC_SECRET_KEY** and **AES_SECRET_KEY**.
+
+```json
+{
+  "HMAC_SECRET_KEY": "MY_HMAC_SECRET",
+  "AES_SECRET_KEY": "MY_AES_SECRET",
+  "DefaultEncryptionMode": "ECDSA_AES",
+  "DefaultFileName": "license.json",
+  "DefaultParameters": {
+    "product_name": "FEL Generator",
+    "product_version": "1.0.0",
+    "product_copyright": "FansElectronics.com"
+  }
+}
+```
+
+> **Important:** The secret keys in `config.json` must be identical to those defined in your Arduino program.
 
 ---
 
-# ❓ Why PHP?
+# 💻 Alternative: PHP CLI
 
-We use **PHP CLI** because:
+The original PHP version is still included for developers who want to integrate the license generator into a web dashboard or backend system.
 
-- Cross-platform (Windows/Linux/Mac)
-- Matches existing backend stack
-- Works offline
-- Easy to integrate with web dashboards
-
-More generators will be added in future.
-
----
-
-# 📦 Requirements
+## Requirements
 
 Download PHP:
+
 https://www.php.net/downloads.php
 
-Check installation:
+Verify the installation:
 
 ```bash
 php -v
@@ -42,31 +76,28 @@ php -v
 
 ---
 
-# 🔐 STEP 1 — Generate Key Pair
+## 🔐 Step 1 — Generate Key Pair
 
-Run:
+Run the script from Command Prompt (Windows) or Terminal (Linux/macOS):
 
 ```bash
 ./generate_keys.sh
 ```
 
-Output:
+The following files will be created:
 
+```text
+private_key.pem
+public_key.pem
 ```
-keys/
- ├── private_key.pem
- └── public_key.pem
-```
 
-### ⚠️ IMPORTANT
-
-Each product MUST use different keys.
-
-If one product key leaks → other products remain safe.
+> ⚠️ **Recommended:** Use a different key pair for every product. If one private key is compromised, your other products remain secure. Always store private keys safely.
 
 ---
 
-# 🔑 STEP 2 — Insert Public Key into Firmware
+## 🔑 Step 2 — Add the Public Key to Your Firmware
+
+Copy the contents of `public_key.pem` into your ESP8266/ESP32 firmware.
 
 ```cpp
 const char PUBLIC_KEY[] PROGMEM = R"KEY(
@@ -78,63 +109,62 @@ PASTE_PUBLIC_KEY_HERE
 
 ---
 
-# 🧠 STEP 3 — Get Device ID
+## 🧠 Step 3 — Get the Device ID
 
-Upload example → open Serial Monitor → copy DeviceID.
+Upload your firmware to the ESP8266 or ESP32.
+
+Open the **Serial Monitor** and copy the displayed Device ID.
+
+Example:
+
+```text
+Device ID : ABCEFGHIJ1234567890
+```
 
 ---
 
-# 📄 STEP 4 — Generate License (Terminal)
+## 📄 Step 4 — Generate a License
+
+### A. Desktop App (Recommended)
+
+1. Open **FEL Generator.exe**
+2. Paste the Device ID
+3. Click **Generate**
+4. Save the output as `license.json`
+
+### B. PHP CLI
 
 ```bash
-php generate_license.php \
-encryption=ECDSA \
-device_id=ABC123 \
-product="LED Controller"
+php generate_license.php encryption=ECDSA device_id=ABCEFGHIJ1234567890 product="LED Controller"
 ```
-
-Output → `license.json`
 
 ---
 
-## 🖱️ Easy Method (.BAT)
+## 📦 Step 5 — Upload the License to ESP
 
-Create `generate_license.bat`
+Place the generated file in:
 
-```bat
-php license_generator.php encryption=ECDSA device_id=ABC123
-pause
-```
-
-Double click to run.
-
----
-
-# 📦 STEP 5 — Upload to ESP
-
-Place file in:
-
-```
+```text
 /data/license.json
 ```
 
-Upload LittleFS:
+Upload it using **ESP LittleFS Upload**.
 
-```
-Tools → ESP LittleFS Upload
-```
+**Arduino IDE**
 
-📺 Tutorial:
-https://youtube.com/watch?v=COMING_SOON
+```text
+Tools
+ └── ESP LittleFS Upload
+```
 
 ---
 
-# 🧾 Example license.json
+# 🧾 Example `license.json`
 
 ```json
 {
   "data": {
-    "device_id": "ABC123",
+    "device_id": "ABCEFGHIJ1234567890",
     "product": "LED Controller"
   },
   "signature": "BASE64_SIGNATURE"
@@ -145,23 +175,45 @@ https://youtube.com/watch?v=COMING_SOON
 
 # 🏭 Production Workflow
 
-1️⃣ Device shows Device ID  
-2️⃣ Customer sends Device ID  
-3️⃣ Developer generates license  
-4️⃣ Upload to device  
+```text
+ESP Device
+    │
+    │ 1. Displays Device ID
+    ▼
+Customer
+    │
+    │ 2. Sends Device ID
+    ▼
+Developer
+    │
+    │ 3. Generates license.json
+    ▼
+License File
+    │
+    │ 4. Uploads to LittleFS
+    ▼
+ESP Activated ✅
+```
 
 ---
 
 # 🚨 Security Warning
 
-NEVER SHARE:
-```
+## NEVER SHARE
+
+```text
 private_key.pem
 ```
 
-This is the root of trust.
+Your **Private Key** is the **Root of Trust**. Anyone with this file can generate valid licenses for your devices.
+
+Only these files are safe to distribute:
+
+- ✅ `public_key.pem`
+- ✅ `license.json`
 
 ---
 
-# 🎉 Done
-Your device is ready for production.
+# 📜 License
+
+Copyright © FansElectronics.com | Offline License System for ESP8266 & ESP32

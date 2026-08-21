@@ -1,0 +1,11 @@
+{
+  "HMAC_SECRET_KEY": "MY_HMAC_SECRET",
+  "AES_SECRET_KEY": "MY_AES_SECRET",
+  "DefaultEncryptionMode": "ECDSA_AES",
+  "DefaultFileName": "license.json",
+  "DefaultParameters": {
+    "product_name": "FEL Generator",
+    "product_version": "1.0.0",
+    "product_copyright": "FansElectronics.com"
+  }
+}

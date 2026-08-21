@@ -1,37 +1,66 @@
-# FansElectronics_License
-
+# 🛠️ FansElectronics License Generator
 [🇺🇸 English Version](README.md)
 
 ---
 
-# 🛠️ License Generator Tools (Offline License System)
+# 🚀 FEL Generator (Windows Desktop App)
 
-Library **FansElectronics_License** menyediakan tools lengkap untuk membuat file `license.json` secara **offline** tanpa perlu server.
+Generator utama adalah aplikasi desktop **FEL Generator.exe** yang berjalan langsung di Windows.
 
-Dengan tools ini kamu dapat:
-- Mengunci firmware ke hardware tertentu
-- Mengaktifkan fitur berdasarkan lisensi
-- Mencegah cloning perangkat
-- Menjalankan sistem lisensi tanpa internet
+![FEL Generator](FEL_Generator.png)
+
+## ✨ Keunggulan
+
+- GUI sederhana dan mudah digunakan
+- Portable (tanpa instalasi)
+- Tidak membutuhkan PHP atau framework
+- 100% Offline
+- Generate, Copy, dan Save `license.json` hanya dengan satu klik
+
+## Cara Menggunakan
+
+1. Download **FEL Generator.exe** dari halaman **Releases / Folder tools**.
+2. Jalankan aplikasi.
+3. Pada saat pertama dijalankan, aplikasi otomatis membuat:
+
+```
+config.json
+private_key.pem
+public_key.pem
+```
+
+4. Ganti isi `private_key.pem` dengan **ECDSA Private Key** milik Anda (jika belum jalankan **generate_keys.sh**).
+5. Masukkan **Device ID**.
+6. Pilih metode enkripsi.
+7. Klik **Generate License**.
+8. Simpan hasil sebagai `license.json`.
+
+## Pengaturan Applikasi
+sesuiakan pengaturan default, terutama **HMAC_SECRET_KEY** dan **AES_SECRET_KEY** samakan dengan pada program Arduino.
+```
+{
+  "HMAC_SECRET_KEY": "MY_HMAC_SECRET",
+  "AES_SECRET_KEY": "MY_AES_SECRET",
+  "DefaultEncryptionMode": "ECDSA_AES",
+  "DefaultFileName": "license.json",
+  "DefaultParameters": {
+    "product_name": "FEL Generator",
+    "product_version": "1.0.0",
+    "product_copyright": "FansElectronics.com"
+  }
+}
+```
 
 ---
 
-# ❓ Kenapa Menggunakan PHP?
+# 💻 Alternatif: PHP CLI
 
-Generator lisensi dibuat menggunakan **PHP CLI** karena:
+Versi PHP tetap disediakan untuk integrasi ke dashboard web atau backend.
 
-- Mudah digunakan di Windows, Linux, Mac
-- Sama dengan stack backend FansElectronics
-- Bisa dijalankan offline tanpa server
-- Mudah diintegrasikan ke aplikasi web / dashboard
-
-Kedepannya generator akan tersedia dalam bahasa lain.
-
----
-
-# 📦 Prasyarat
+## Requirement
 
 Download PHP:
+
 https://www.php.net/downloads.php
 
 Cek instalasi:
@@ -42,102 +71,85 @@ php -v
 
 ---
 
-# 🔐 STEP 1 — Generate Key Pair (Sekali saja)
+## 🔐 Step 1 — Generate Key Pair
 
-Jalankan:
+Jalankan tinggal buka dengan CMD atau Linux dengan perintah:
 
 ```bash
 ./generate_keys.sh
 ```
 
-Hasil:
+Hasilnya akan muncul file:
 
+```text
+private_key.pem
+public_key.pem
 ```
-keys/
- ├── private_key.pem
- └── public_key.pem
-```
 
-### ⚠️ PENTING (WAJIB DIBACA)
-
-Setiap **produk** HARUS memiliki key pair berbeda.
-
-Contoh:
-- Produk LED Controller → key A
-- Produk Smart Fan → key B
-- Produk Running Text → key C
-
-Jika satu key bocor → produk lain tetap aman.
+> ⚠️ **Penting:** Disarankan setiap produk harus menggunakan key yang berbeda. Jika satu private key bocor, produk lain tetap aman, simpanlah kunci dengan aman.
 
 ---
 
-# 🔑 STEP 2 — Masukkan Public Key ke Firmware
+## 🔑 Step 2 — Masukkan Public Key ke Firmware
+
+Salin `public_key.pem` ke firmware ESP.
 
 ```cpp
 const char PUBLIC_KEY[] PROGMEM = R"KEY(
 -----BEGIN PUBLIC KEY-----
-ISI_PUBLIC_KEY_DISINI
+PASTE_PUBLIC_KEY_HERE
 -----END PUBLIC KEY-----
 )KEY";
 ```
 
 ---
 
-# 🧠 STEP 3 — Ambil Device ID dari ESP
+## 🧠 Step 3 — Ambil Device ID
 
-Upload contoh sketch → buka Serial Monitor → copy DeviceID.
+Upload firmware ke ESP8266/ESP32.
 
----
-
-# 📄 STEP 4 — Generate License (CMD / Terminal)
-
-Buka CMD / Terminal di folder tools.
+Buka **Serial Monitor**, kemudian salin Device ID yang muncul.
 
 Contoh:
 
+```text
+Device ID : ABC123456789
+```
+
+---
+
+## 📄 Step 4 — Generate License
+
+### A. Desktop App (Disarankan)
+
+1. Buka **FEL Generator.exe**
+2. Paste Device ID
+3. Klik **Generate**
+4. Simpan sebagai `license.json`
+
+### B. PHP CLI
+
 ```bash
-php generate_license.php ^
-encryption=ECDSA ^
-device_id=ABC123 ^
-product="LED Controller" ^
-serial=SN001 ^
-panel=10
+php generate_license.php encryption=ECDSA device_id=ABCEFGHIJ1234567890 product="LED Controller"
 ```
-
-Output → `license.json`
-
 ---
 
-## 🖱️ Cara Mudah (Double Click .BAT)
+## 📦 Step 5 — Upload License ke ESP
 
-Buat file `generate_license.bat`
+Letakkan file hasil generate di:
 
-Isi:
-
-```bat
-php license_generator.php encryption=ECDSA device_id=ABC123 product="LED Controller"
-pause
-```
-
-User cukup double click.
-
----
-
-# 📦 STEP 5 — Upload License ke ESP
-
-Simpan file ke:
-
-```
+```text
 /data/license.json
 ```
 
-Upload LittleFS:
-```
-Tools → ESP LittleFS Upload
-```
+Upload menggunakan **ESP LittleFS Upload**.
 
-📺 Tutorial video:
-https://youtube.com/watch?v=COMING_SOON
+**Arduino IDE**
+
+```text
+Tools
+ └── ESP LittleFS Upload
+```
 
 ---
 
@@ -146,9 +158,8 @@ https://youtube.com/watch?v=COMING_SOON
 ```json
 {
   "data": {
-    "device_id": "ABC123",
-    "product": "LED Controller",
-    "serial": "SN001"
+    "device_id": "ABCEFGHIJ1234567890",
+    "product": "LED Controller"
   },
   "signature": "BASE64_SIGNATURE"
 }
@@ -156,25 +167,46 @@ https://youtube.com/watch?v=COMING_SOON
 
 ---
 
-# 🏭 Workflow Produksi
+# 🏭 Production Workflow
 
-1️⃣ ESP tampilkan Device ID  
-2️⃣ Customer kirim ke developer  
-3️⃣ Generate license.json  
-4️⃣ Upload ke perangkat  
-
+```text
+ESP Device
+    │
+    │ 1. Menampilkan Device ID
+    ▼
+Customer
+    │
+    │ 2. Mengirim Device ID
+    ▼
+Developer
+    │
+    │ 3. Generate license.json
+    ▼
+License File
+    │
+    │ 4. Upload ke LittleFS
+    ▼
+ESP Activated ✅
+```
 ---
 
 # 🚨 Security Warning
 
-JANGAN BAGIKAN:
-```
+**JANGAN PERNAH MEMBAGIKAN**
+
+```text
 private_key.pem
 ```
 
-Ini adalah ROOT OF TRUST sistem lisensi.
+Private Key adalah **Root of Trust**. Siapa pun yang memiliki file ini dapat membuat lisensi yang valid.
+
+Yang boleh dibagikan hanya:
+
+- ✅ `public_key.pem`
+- ✅ `license.json`
 
 ---
 
-# 🎉 Selesai
-Perangkat siap produksi.
+# 📜 License
+
+Copyright © FansElectronics.com | Offline License System for ESP8266 & ESP32.

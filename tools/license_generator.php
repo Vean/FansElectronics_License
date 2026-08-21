@@ -38,7 +38,7 @@ function loadPublicKeyAsString($path)
 $HMAC_SECRET = "MY_HMAC_SECRET";
 $AES_SECRET  = "MY_AES_SECRET";
 
-$basePath = __DIR__ . "/keys/";
+$basePath = __DIR__ . "/";
 $publicKeyPath  = $basePath . "public_key.pem";
 $privateKeyPath = $basePath . "private_key.pem";
 
