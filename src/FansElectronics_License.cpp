@@ -2,14 +2,15 @@
 #include <LittleFS.h>
 
 #if defined(ESP32)
+#include "mbedtls/aes.h"
 #include "mbedtls/sha256.h"
 #include "mbedtls/base64.h"
 #include "mbedtls/pk.h"
 #include "esp_chip_info.h"
-#include "esp_spi_flash.h"
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
 #include <bearssl/bearssl.h>
+#include <bearssl/bearssl_block.h>
 #endif
 
 // =====================================================
@@ -108,14 +109,14 @@ void FEL_hmac_sha256(const String &key, const String &message, uint8_t out[32])
   memcpy(innerBuf + blockSize, message.c_str(), message.length());
 
   uint8_t innerHash[32];
-  FEL_sha256_binary(innerBuf, innerLen, innerHash); // 🟢 Menggunakan penanganan biner murni
+  FEL_sha256_binary(innerBuf, innerLen, innerHash);
 
   size_t outerLen = blockSize + 32;
   uint8_t outerBuf[outerLen];
   memcpy(outerBuf, o_key_pad, blockSize);
   memcpy(outerBuf + blockSize, innerHash, 32);
 
-  FEL_sha256_binary(outerBuf, outerLen, out); // 🟢 Menggunakan penanganan biner murni
+  FEL_sha256_binary(outerBuf, outerLen, out);
 }
 
 // =====================================================
@@ -146,8 +147,20 @@ bool FansElectronics_License::loadLicense(const char *path)
   if (deserializeJson(_doc, f))
     return false;
 
-  JsonObject dataObj = _doc["data"];
-  serializeJson(dataObj, licenseDataString);
+  if (_doc["data"].is<JsonObject>())
+  {
+    JsonObject dataObj = _doc["data"];
+    serializeJson(dataObj, licenseDataString);
+  }
+  else if (_doc["data"].is<const char *>())
+  {
+    licenseDataString = _doc["data"].as<String>();
+  }
+  else
+  {
+    return false; // Format tidak dikenali
+  }
+
   licenseSignature = _doc["signature"].as<String>();
 
   _licenseLoaded = true;
@@ -160,23 +173,101 @@ bool FansElectronics_License::loadLicense(const char *path)
 LicenseStatus FansElectronics_License::verifyLicense(const char *cryptoKey,
                                                      String productSecret,
                                                      uint8_t idLength,
-                                                     bool useFlashSize)
+                                                     bool useFlashSize,
+                                                     const char *aesKey)
 {
   if (_licenseVerified)
     return FEL_LICENSE_OK;
-
   if (!_licenseLoaded)
     return FEL_LICENSE_JSON_INVALID;
 
-  JsonObject dataObj = _doc["data"];
-  if (dataObj.isNull())
+  if (_doc["data"].isNull())
     return FEL_LICENSE_MISSING_DATA_OBJECT;
 
-  if (!dataObj["device_id"].is<const char *>())
-    return FEL_LICENSE_MISSING_DEVICE_ID;
-
+  // 1. Verifikasi Stempel Kriptografi Terlebih Dahulu (Anti Malware)
   if (!verifySignature(cryptoKey))
     return FEL_LICENSE_SIGNATURE_INVALID;
+
+  // 2. PROSES DEKRIPSI AES (Hanya jika mode berakhiran _AES)
+  if (_mode == FEL_MODE_LIGHT_AES || _mode == FEL_MODE_HMAC_AES || _mode == FEL_MODE_ECDSA_AES)
+  {
+    if (aesKey == NULL || strlen(aesKey) == 0)
+      return FEL_LICENSE_AES_DECRYPT_FAIL;
+
+    // --- Persiapan Kunci & IV ---
+    uint8_t key[32];
+    FEL_sha256(String(aesKey), key); // Hash kunci user menjadi persis 32-byte (256-bit)
+
+    uint8_t iv[16];
+    if (_doc.containsKey("iv"))
+    {
+      String ivStr = _doc["iv"].as<String>();
+      // Error jika kurang atau lebih 16 karakter
+      if (ivStr.length() != 16)
+      {
+        return FEL_LICENSE_AES_DECRYPT_FAIL;
+      }
+      memcpy(iv, ivStr.c_str(), 16);
+    }
+    else
+    {
+      // Smart IV: Ambil 16 karakter pertama dari Device ID alat ini
+      String devId = generateDeviceID(productSecret, idLength, useFlashSize);
+      memcpy(iv, devId.c_str(), 16);
+    }
+
+    // --- Decode Base64 Payload ---
+    int maxLen = licenseDataString.length();
+    uint8_t *encBuf = new uint8_t[maxLen];
+    int encLen = FEL_base64_decode(encBuf, licenseDataString.c_str(), maxLen);
+
+    if (encLen == 0 || encLen % 16 != 0)
+    {
+      delete[] encBuf;
+      return FEL_LICENSE_AES_DECRYPT_FAIL;
+    }
+
+    uint8_t *decBuf = new uint8_t[encLen + 1];
+
+    // --- Eksekusi Hardware Decryption ---
+#if defined(ESP32)
+    mbedtls_aes_context aes;
+    mbedtls_aes_init(&aes);
+    mbedtls_aes_setkey_dec(&aes, key, 256);
+    mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, encLen, iv, encBuf, decBuf);
+    mbedtls_aes_free(&aes);
+#elif defined(ESP8266)
+    memcpy(decBuf, encBuf, encLen);
+    br_aes_ct_cbcdec_keys aesCtx;
+    br_aes_ct_cbcdec_init(&aesCtx, key, 32);
+    br_aes_ct_cbcdec_run(&aesCtx, iv, decBuf, encLen); // BearSSL melakukan inplace decrypt
+#endif
+
+    uint8_t pad = decBuf[encLen - 1];
+    if (pad > 0 && pad <= 16)
+    {
+      encLen -= pad;
+    }
+    decBuf[encLen] = '\0'; // Tutup string
+
+    String decryptedStr = (const char *)decBuf;
+
+    // Bersihkan buffer memori asli agar RAM tidak bocor
+    delete[] encBuf;
+    delete[] decBuf;
+
+    DynamicJsonDocument tempDoc(1024);
+    DeserializationError err = deserializeJson(tempDoc, decryptedStr);
+
+    if (err)
+      return FEL_LICENSE_AES_DECRYPT_FAIL; // Gagal parse = salah password / data rusak
+
+    _doc["data"] = tempDoc.as<JsonObject>();
+  }
+
+  // 3. Verifikasi Identitas (Device ID Binding)
+  if (!hasKey("device_id"))
+    return FEL_LICENSE_MISSING_DEVICE_ID;
 
   if (productSecret.length() > 0)
     if (!isLicenseForDevice(productSecret, idLength, useFlashSize))
@@ -198,7 +289,7 @@ FEL_DeviceInfo FansElectronics_License::getDeviceInfo()
   sprintf(macStr, "%04X%08X", (uint16_t)(mac >> 32), (uint32_t)mac);
   info.mac = macStr;
   info.chipModel = "ESP32";
-  info.flashSize = String(spi_flash_get_chip_size());
+  info.flashSize = String(ESP.getFlashChipSize());
 #else
   info.mac = WiFi.macAddress();
   info.chipModel = "ESP8266";
@@ -258,7 +349,7 @@ String FansElectronics_License::generateDeviceID(String secret,
 bool FansElectronics_License::verifySignature(const char *key)
 {
   // 1. Jika mode LIGHT, signature tidak diverifikasi secara kriptografi
-  if (_mode == FEL_MODE_LIGHT)
+  if (_mode == FEL_MODE_LIGHT || _mode == FEL_MODE_LIGHT_AES)
   {
     return true;
   }
@@ -275,7 +366,7 @@ bool FansElectronics_License::verifySignature(const char *key)
   int sig_len = FEL_base64_decode(sig, licenseSignature.c_str(), licenseSignature.length());
 
   // ================= HMAC MODE (Khusus ESP8266 / Fallback) =================
-  if (_mode == FEL_MODE_HMAC)
+  if (_mode == FEL_MODE_HMAC || _mode == FEL_MODE_HMAC_AES)
   {
     uint8_t calc[32];
     FEL_hmac_sha256(String(key), licenseDataString, calc);
@@ -299,7 +390,7 @@ bool FansElectronics_License::verifySignature(const char *key)
 
   // ================= ECDSA MODE (Khusus ESP32) =================
 #if defined(ESP32)
-  if (_mode == FEL_MODE_ECDSA)
+  if (_mode == FEL_MODE_ECDSA || _mode == FEL_MODE_ECDSA_AES)
   {
     mbedtls_pk_context pk;
     mbedtls_pk_init(&pk);
@@ -333,7 +424,6 @@ bool FansElectronics_License::verifySignature(const char *key)
     }
   }
 #endif
-
   // Jika masuk ke sini (misal memilih ECDSA di ESP8266), kunci ditolak
   FEL_securityDelay();
   return false;
