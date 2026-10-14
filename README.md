@@ -18,9 +18,9 @@ Tested on Arduino **ESP32 Core 2.0.17** (Recommended), Wemos D1 Mini (ESP8266), 
 
 ---
 
-## What's New in v2.1.0 🚀
+## What's New in v2.1.1 🚀
 
-New update focused on **Payload Confidentiality (AES-256-CBC)** to fully encrypt the JSON payload.
+New update focused on **Payload Confidentiality (AES-256-CBC)** to fully encrypt the JSON payload + fixing cache system.
 <p align="justify">AES in this library <b>is not a standalone</b> signature mode. Instead, it acts as an encryption layer combined with our signature modes (Encrypt-then-MAC architecture). For example, combining AES with ECDSA creates FEL_MODE_ECDSA_AES.</p>
 <small><b>Note:</b> If you want to run AES as a standalone encryption without any cryptographic signature validation, that is exactly what <b>FEL_MODE_LIGHT_AES</b> does!</small>
 

@@ -18,9 +18,9 @@ Telah diuji pada Arduino **ESP32 Core 2.0.17** (Direkomendasikan), Wemos D1 Mini
 
 ---
 
-## Apa yang Baru di v2.1.0 🚀
+## Apa yang Baru di v2.1.1 🚀
 
-Pembaruan baru berfokus pada **Kerahasiaan Payload (AES-256-CBC)** untuk mengenkripsi payload JSON secara menyeluruh.
+Pembaruan baru berfokus pada **Kerahasiaan Payload (AES-256-CBC)** untuk mengenkripsi payload JSON secara menyeluruh + perbaikan sistem cache.
 <p align="justify">AES dalam pustaka ini <b>bukanlah</b> mode tanda tangan (signature) yang berdiri sendiri. Sebaliknya, AES berfungsi sebagai lapisan enkripsi yang dikombinasikan dengan mode tanda tangan kami (arsitektur Encrypt-then-MAC). Sebagai contoh, menggabungkan AES dengan ECDSA akan menghasilkan FEL_MODE_ECDSA_AES.</p>
 <small><b>Catatan:</b> Jika Anda ingin menjalankan AES sebagai enkripsi mandiri tanpa validasi tanda tangan kriptografis apa pun, itulah fungsi dari <b>FEL_MODE_LIGHT_AES</b>!</small>
 
