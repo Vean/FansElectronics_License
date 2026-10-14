@@ -51,7 +51,7 @@ int FEL_base64_decode(uint8_t *out, const char *in, int len)
 // =====================================================
 void FEL_securityDelay()
 {
-  // Delay anti tempering, 2 seconds
+  // Delay anti tempering, 3 seconds
   delay(3000);
 }
 
@@ -133,19 +133,53 @@ FansElectronics_License::FansElectronics_License(JsonDocument &doc, uint8_t mode
 }
 
 // =====================================================
+// CLEAR CACHE (Reset semua status dan data di RAM)
+// =====================================================
+void FansElectronics_License::clearCache()
+{
+  _licenseLoaded = false;
+  _licenseVerified = false;
+  _lastStatus = FEL_LICENSE_FILE_NOT_FOUND;
+  licenseDataString = "";
+  licenseSignature = "";
+  _doc.clear();
+}
+
+// =====================================================
 // LOAD LICENSE FROM LITTLEFS
 // =====================================================
 bool FansElectronics_License::loadLicense(const char *path)
 {
+  clearCache();
+
   if (!LittleFS.begin())
+  {
+    _lastStatus = FEL_LICENSE_FILE_NOT_FOUND;
     return false;
+  }
+
+  if (!LittleFS.exists(path))
+  {
+    _lastStatus = FEL_LICENSE_FILE_NOT_FOUND;
+    return false;
+  }
 
   File f = LittleFS.open(path, "r");
   if (!f)
+  {
+    _lastStatus = FEL_LICENSE_FILE_NOT_FOUND;
     return false;
+  }
 
-  if (deserializeJson(_doc, f))
+  DeserializationError err = deserializeJson(_doc, f);
+  f.close();
+
+  if (err)
+  {
+    clearCache();
+    _lastStatus = FEL_LICENSE_JSON_INVALID;
     return false;
+  }
 
   if (_doc["data"].is<JsonObject>())
   {
@@ -158,6 +192,8 @@ bool FansElectronics_License::loadLicense(const char *path)
   }
   else
   {
+    clearCache();
+    _lastStatus = FEL_LICENSE_MISSING_DATA_OBJECT;
     return false; // Format tidak dikenali
   }
 
@@ -178,21 +214,44 @@ LicenseStatus FansElectronics_License::verifyLicense(const char *cryptoKey,
 {
   if (_licenseVerified)
     return FEL_LICENSE_OK;
+
   if (!_licenseLoaded)
-    return FEL_LICENSE_JSON_INVALID;
+    return _lastStatus;
 
   if (_doc["data"].isNull())
-    return FEL_LICENSE_MISSING_DATA_OBJECT;
+  {
+    clearCache();
+    _lastStatus = FEL_LICENSE_MISSING_DATA_OBJECT;
+    return _lastStatus;
+  }
+
+  if (_mode != FEL_MODE_LIGHT && _mode != FEL_MODE_LIGHT_AES)
+  {
+    if (!_doc.containsKey("signature") || licenseSignature.isEmpty())
+    {
+      clearCache();
+      _lastStatus = FEL_LICENSE_MISSING_SIGNATURE;
+      return _lastStatus;
+    }
+  }
 
   // 1. Verifikasi Stempel Kriptografi Terlebih Dahulu (Anti Malware)
   if (!verifySignature(cryptoKey))
-    return FEL_LICENSE_SIGNATURE_INVALID;
+  {
+    clearCache();
+    _lastStatus = FEL_LICENSE_SIGNATURE_INVALID;
+    return _lastStatus;
+  }
 
   // 2. PROSES DEKRIPSI AES (Hanya jika mode berakhiran _AES)
   if (_mode == FEL_MODE_LIGHT_AES || _mode == FEL_MODE_HMAC_AES || _mode == FEL_MODE_ECDSA_AES)
   {
     if (aesKey == NULL || strlen(aesKey) == 0)
-      return FEL_LICENSE_AES_DECRYPT_FAIL;
+    {
+      clearCache();
+      _lastStatus = FEL_LICENSE_AES_DECRYPT_FAIL;
+      return _lastStatus;
+    }
 
     // --- Persiapan Kunci & IV ---
     uint8_t key[32];
@@ -205,7 +264,9 @@ LicenseStatus FansElectronics_License::verifyLicense(const char *cryptoKey,
       // Error jika kurang atau lebih 16 karakter
       if (ivStr.length() != 16)
       {
-        return FEL_LICENSE_AES_DECRYPT_FAIL;
+        clearCache();
+        _lastStatus = FEL_LICENSE_AES_DECRYPT_FAIL;
+        return _lastStatus;
       }
       memcpy(iv, ivStr.c_str(), 16);
     }
@@ -224,7 +285,9 @@ LicenseStatus FansElectronics_License::verifyLicense(const char *cryptoKey,
     if (encLen == 0 || encLen % 16 != 0)
     {
       delete[] encBuf;
-      return FEL_LICENSE_AES_DECRYPT_FAIL;
+      clearCache();
+      _lastStatus = FEL_LICENSE_AES_DECRYPT_FAIL;
+      return _lastStatus;
     }
 
     uint8_t *decBuf = new uint8_t[encLen + 1];
@@ -260,20 +323,35 @@ LicenseStatus FansElectronics_License::verifyLicense(const char *cryptoKey,
     DeserializationError err = deserializeJson(tempDoc, decryptedStr);
 
     if (err)
-      return FEL_LICENSE_AES_DECRYPT_FAIL; // Gagal parse = salah password / data rusak
+    {
+      clearCache();
+      _lastStatus = FEL_LICENSE_AES_DECRYPT_FAIL;
+      return _lastStatus; // Gagal parse = salah password / data rusak
+    }
 
     _doc["data"] = tempDoc.as<JsonObject>();
   }
 
   // 3. Verifikasi Identitas (Device ID Binding)
   if (!hasKey("device_id"))
-    return FEL_LICENSE_MISSING_DEVICE_ID;
+  {
+    clearCache();
+    _lastStatus = FEL_LICENSE_MISSING_DEVICE_ID;
+    return _lastStatus;
+  }
 
   if (productSecret.length() > 0)
+  {
     if (!isLicenseForDevice(productSecret, idLength, useFlashSize))
-      return FEL_LICENSE_DEVICE_MISMATCH;
+    {
+      clearCache();
+      _lastStatus = FEL_LICENSE_DEVICE_MISMATCH;
+      return _lastStatus;
+    }
+  }
 
   _licenseVerified = true;
+  _lastStatus = FEL_LICENSE_OK;
   return FEL_LICENSE_OK;
 }
 
@@ -340,9 +418,6 @@ String FansElectronics_License::generateDeviceID(String secret,
   return String(out);
 }
 
-// =====================================================
-// VERIFY SIGNATURE (HMAC mode)
-// =====================================================
 // =====================================================
 // VERIFY SIGNATURE (Fixed v2.0.0 - Integration Mode)
 // =====================================================
@@ -592,6 +667,8 @@ void FansElectronics_License::printDebug(Stream &s)
   s.println(_licenseLoaded);
   s.print("Verified    : ");
   s.println(_licenseVerified);
+  s.print("Last Status : ");
+  s.println((int)_lastStatus);
   s.println("=========================");
 }
 
@@ -712,6 +789,12 @@ String FansElectronics_License::getModeString()
     return "HMAC";
   if (_mode == FEL_MODE_ECDSA)
     return "ECDSA";
+  if (_mode == FEL_MODE_LIGHT_AES)
+    return "LIGHT_AES";
+  if (_mode == FEL_MODE_HMAC_AES)
+    return "HMAC_AES";
+  if (_mode == FEL_MODE_ECDSA_AES)
+    return "ECDSA_AES";
   return "UNKNOWN";
 }
 

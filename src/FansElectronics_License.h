@@ -4,8 +4,8 @@
   Wrote by    : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-06
-  Updated     : 2026-08-21
-  Version     : 2.1.0
+  Updated     : 2026-10-14
+  Version     : 2.1.1
   Website     : https://www.fanselectronics.com
   Repository  : https://www.github.com/Vean/FansElectronics_License
 
@@ -22,7 +22,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-#define FEL_VERSION "2.1.0"
+#define FEL_VERSION "2.1.1"
 
 // --- Bit strength naming ---
 #define FEL_ID_64BIT 16
@@ -48,15 +48,15 @@
 
 enum LicenseStatus
 {
-  FEL_LICENSE_OK = 0,
-  FEL_LICENSE_JSON_INVALID,
-  FEL_LICENSE_FILE_NOT_FOUND,
-  FEL_LICENSE_MISSING_DATA_OBJECT,
-  FEL_LICENSE_MISSING_SIGNATURE,
-  FEL_LICENSE_MISSING_DEVICE_ID,
-  FEL_LICENSE_SIGNATURE_INVALID,
-  FEL_LICENSE_DEVICE_MISMATCH,
-  FEL_LICENSE_AES_DECRYPT_FAIL
+  FEL_LICENSE_FILE_NOT_FOUND = 0,
+  FEL_LICENSE_OK = 1,
+  FEL_LICENSE_JSON_INVALID = 2,
+  FEL_LICENSE_MISSING_DATA_OBJECT = 3,
+  FEL_LICENSE_MISSING_SIGNATURE = 4,
+  FEL_LICENSE_MISSING_DEVICE_ID = 5,
+  FEL_LICENSE_SIGNATURE_INVALID = 6,
+  FEL_LICENSE_DEVICE_MISMATCH = 7,
+  FEL_LICENSE_AES_DECRYPT_FAIL = 8
 };
 
 struct FEL_DeviceInfo
@@ -71,6 +71,7 @@ class FansElectronics_License
 public:
   FansElectronics_License(JsonDocument &doc, uint8_t mode = FEL_MODE_HMAC);
 
+  void clearCache();
   bool loadLicense(const char *path = "/license.json");
 
   LicenseStatus verifyLicense(const char *cryptoKey,
@@ -105,6 +106,7 @@ private:
   uint8_t _mode;
   bool _licenseLoaded = false;
   bool _licenseVerified = false;
+  LicenseStatus _lastStatus = FEL_LICENSE_FILE_NOT_FOUND;
 
   String licenseDataString;
   String licenseSignature;
