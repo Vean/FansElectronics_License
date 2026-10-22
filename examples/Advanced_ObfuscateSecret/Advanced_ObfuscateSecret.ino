@@ -4,157 +4,110 @@
   Writer      : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-07
-  Updated     : 2026-08-21
-  Library     : FansElectronics_License v2.1.0
+  Updated     : 2026-10-22
+  Library     : FansElectronics_License v2.2.0
   Website     : https://www.fanselectronics.com
   Repository  : https://github.com/Vean/FansElectronics_License
-  Example     : Obfuscated_Secret
-
-  ============================================================
-
-  WHY THIS EXAMPLE EXISTS
-  ------------------------------------------------------------
-  EN:
-  Storing PRODUCT_SECRET as plain text inside firmware is risky.
-  Anyone can dump flash memory and read the secret easily.
-
-  This example shows a SIMPLE OBFUSCATION technique to make
-  reverse engineering much harder.
-
-  This is NOT military grade encryption.
-  This is firmware hardening.
-
-  ID:
-  Menyimpan PRODUCT_SECRET dalam bentuk teks biasa sangat berbahaya.
-  Hacker bisa dump firmware lalu membaca secret dengan mudah.
-
-  Contoh ini menunjukkan teknik OBFUSCATION sederhana untuk
-  mempersulit proses reverse engineering.
-
-  Ini bukan enkripsi militer.
-  Ini adalah hardening firmware.
+  Example     : Obfuscated_Secret (Full Obfuscation: Secret & Public Key)
 ============================================================ */
 
-// EN: Include FansElectronics_License library & ArduinoJSON
-// ID: Masukkan library FansElectronics_License & ArduinoJSON
 #include <ArduinoJson.h>
 #include <FansElectronics_License.h>
 
 /* ============================================================
-   STEP 1 — OBFUSCATED SECRET
+   SHARED XOR KEY (32-bit Master Obfuscation Key)
 ============================================================ */
-
-/*
-EN:
-We DO NOT store secret as string: "MY_SECRET"
-
-Instead we store XOR encoded bytes.
-
-Even if attacker dumps firmware,
-they will NOT see readable text.
-
-ID:
-Kita TIDAK menyimpan secret sebagai string biasa.
-Melainkan disimpan dalam bentuk byte yang di-XOR.
-*/
-
-// XOR key (can be any random number)
-#define XOR_KEY 91
-
-// "MY_SECRET" XOR encoded offline
-const uint8_t SECRET_OBF[] PROGMEM = {
-    0x17, 0x03, 0x05, 0x09, 0x0F, 0x0A, 0x1F,
-    0x08, 0x05, 0x09, 0x1F, 0x19, 0x08, 0x1F,
-    0x0E, 0x05, 0x6B, 0x68, 0x69};
-
-// EN: Recomendation minimum memory, u can change it
-// ID: Rekomendasi minimal memory, anda bisa memnggantinya
-#define JSON_MEMORY 1024
+// Kunci 32-bit yang sama untuk semua secret/key yang diobfuscate
+#define XOR_KEY 0x12345678UL
 
 /* ============================================================
-   PUBLIC KEY (ECDSA)
+   1. OBFUSCATED PRODUCT SECRET ("MY_SECRET")
 ============================================================ */
+// Original Plaintext: "MY_SECRET"
+const uint8_t SECRET_OBF[] PROGMEM = {
+    0x5F, 0x44, 0x6E, 0x48, 0x44, 0xBC, 0x6E, 0x7E, 0x56};
 
-const char PUBLIC_KEY[] PROGMEM = R"KEY(
------BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu2s2XllDI4fywu45IFhddil+7Egn
-hVwhQLYTEp7VjGE/OlCWzeVPrx8cQxl25Fw1497TsNyW3TP+QxwVXbnaZw==
------END PUBLIC KEY-----
-)KEY";
+/* ============================================================
+   2. OBFUSCATED ECDSA PUBLIC KEY (PEM Format)
+============================================================ */
+/*
+   ORIGINAL PLAIN TEXT PUBLIC KEY (FOR REFERENCE):
+   ------------------------------------------------------------
+   -----BEGIN PUBLIC KEY-----
+   MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu2s2XllDI4fywu45IFhddil+7Egn
+   hVwhQLYTEp7VjGE/OlCWzeVPrx8cQxl25Fw1497TsNyW3TP+QxwVXbnaZw==
+   -----END PUBLIC KEY-----
+   ------------------------------------------------------------
+*/
 
-// EN: Set ESP8266 & ESP32 JSON Memory Type
-// ID: Set  ESP8266 & ESP32 JSON Tipe Memory
+// Hasil obfuscate format PEM ECDSA di atas dengan XOR_KEY 0x12345678UL
+const uint8_t PUBLIC_KEY_OBF[] PROGMEM = {
+    0x3F, 0x38, 0x1E, 0x07, 0x3F, 0x5F, 0x78, 0x75, 0x59, 0x54, 0x13, 0x62,
+    0x61, 0x5F, 0x79, 0x47, 0x77, 0x41, 0x50, 0x73, 0x33, 0x2A, 0x0C, 0x15,
+    0x33, 0x15, 0x51, 0x54, 0x63, 0x6D, 0x47, 0x6E, 0x71, 0x63, 0x6F, 0x4B,
+    0x5D, 0x39, 0x5A, 0x39, 0x58, 0x7B, 0x35, 0x33, 0x55, 0x49, 0x53, 0x4F,
+    0x5D, 0x5F, 0x4A, 0x6B, 0x58, 0x6F, 0x67, 0x5E, 0x31, 0x57, 0x55, 0x63,
+    0x4F, 0x4B, 0x47, 0x74, 0x58, 0x7F, 0x56, 0x58, 0x61, 0x67, 0x53, 0x49,
+    0x69, 0x7F, 0x5E, 0x4C, 0x4F, 0x7F, 0x4D, 0x41, 0x49, 0x5F, 0x64, 0x7B,
+    0x31, 0x11, 0x51, 0x5A, 0x6A, 0x43, 0x72, 0x79, 0x54, 0x58, 0x71, 0x41,
+    0x71, 0x68, 0x75, 0x63, 0x79, 0x67, 0x78, 0x4F, 0x77, 0x56, 0x40, 0x68,
+    0x6F, 0x68, 0x48, 0x59, 0x72, 0x6B, 0x6F, 0x67, 0x41, 0x5B, 0x7B, 0x49,
+    0x74, 0x68, 0x61, 0x7B, 0x51, 0x77, 0x73, 0x5A, 0x73, 0x49, 0x76, 0x5E,
+    0x40, 0x48, 0x4C, 0x62, 0x4D, 0x73, 0x46, 0x58, 0x71, 0x63, 0x79, 0x5B,
+    0x4D, 0x4B, 0x30, 0x2A, 0x21, 0x02, 0x3F, 0x38, 0x1E, 0x07, 0x3F, 0x59,
+    0x53, 0x59, 0x30, 0x4F, 0x7B, 0x7A, 0x58, 0x56, 0x55, 0x3B, 0x53, 0x5D,
+    0x6B, 0x4C, 0x33, 0x2A, 0x0C, 0x15, 0x33};
+
+#define JSON_MEMORY 1024
+
 #if defined(ESP8266)
 StaticJsonDocument<JSON_MEMORY> doc;
 #elif defined(ESP32)
 DynamicJsonDocument doc(JSON_MEMORY);
 #endif
 
-// EN: Create FansElectronics_License object in ECDSA mode
-// ID: Buat objek FansElectronics_License dalam mode ECDSA
-FansElectronics_License license(doc, FEL_MODE_ECDSA); // JSON doc, Encryption Type
+FansElectronics_License license(doc, FEL_MODE_ECDSA);
 
-/* ============================================================
-   SETUP
-============================================================ */
 void setup()
 {
     Serial.begin(115200);
-    Serial.println("\n=== OBFUSCATED SECRET MODE ===");
+    Serial.println("\n=== FULL OBFUSCATED SECRET & PUBLIC KEY ===");
 
-    /*
-    EN:
-    Function to decode secret at runtime.
-    Secret only exists in RAM temporarily.
-
-    ID:
-    Fungsi decode secret saat runtime.
-    Secret hanya muncul di RAM sementara.
-    */
+    // 1. Decode PRODUCT_SECRET ke RAM saat runtime
     String PRODUCT_SECRET = license.decodeSecret(
         SECRET_OBF,
         sizeof(SECRET_OBF),
         XOR_KEY);
     Serial.println("Secret      : " + PRODUCT_SECRET);
+
+    // 2. Decode PUBLIC_KEY ke RAM saat runtime menggunakan XOR_KEY yang sama
+    String PUBLIC_KEY = license.decodeSecret(
+        PUBLIC_KEY_OBF,
+        sizeof(PUBLIC_KEY_OBF),
+        XOR_KEY);
+    Serial.println("Public Key  : Decoded successfully (" + String(PUBLIC_KEY.length()) + " bytes)");
     Serial.println();
-
-    /*
-    EN:
-    From this point, code works EXACTLY the same.
-    User doesn't need to change anything else.
-
-    ID:
-    Setelah ini kode berjalan seperti biasa.
-    User tidak perlu mengubah apapun lagi.
-    */
 
     auto info = license.getDeviceInfo();
     Serial.println("MODEL       : " + info.chipModel);
     Serial.println("MAC         : " + info.mac);
     Serial.println("FLASH SIZE  : " + info.flashSize);
 
-    // EN: Device ID
-    // ID: Device ID
     String deviceID = license.generateDeviceID(PRODUCT_SECRET);
     Serial.println("DeviceID    : " + deviceID);
     Serial.println();
 
-    // EN: Load license, u can change file name
-    // ID: Muat lisensi, anda bisa mengganti nama filenya
     if (!license.loadLicense("/license.json"))
     {
         Serial.println("👀 License not found");
         return;
     }
 
-    // EN: HMAC → verification use BearSSL (Recomended for ESP8266)
-    // ID: HMAC → verifikasimenggunakan BearSSL (Direkomendasikan untuk ESP8266)
+    // Verifikasi lisensi menggunakan string hasil decode (.c_str())
     LicenseStatus status = license.verifyLicense(
-        PUBLIC_KEY,      // Your Public crypto key
-        PRODUCT_SECRET); // Device binding secret
+        PUBLIC_KEY.c_str(),
+        PRODUCT_SECRET);
 
-    // EN: License is valid
-    // ID: Lisensi valid
     if (status == FEL_LICENSE_OK)
     {
         Serial.println("✅ License Valid");
@@ -164,18 +117,9 @@ void setup()
         Serial.println("❌ License Invalid");
     }
 
-    // EN: Print license data
-    // ID: Cetak data lisensi
     license.printLicenseData(Serial);
-
-    // EN: End of setup
-    // ID: Akhir dari setup
 }
 
-// EN: Loop function
-// ID: Fungsi loop
 void loop()
 {
-    // EN: Main Program Loop
-    // ID: Program Utama Loop
 }
