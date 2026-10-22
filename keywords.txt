@@ -67,3 +67,4 @@ isValid	                        KEYWORD2
 isLoaded	                    KEYWORD2
 getModeString	                KEYWORD2
 getLibraryVersion	            KEYWORD2
+clearCache	                    KEYWORD2
