@@ -12,60 +12,62 @@ This library helps IoT developers and hardware manufacturers to:
 - Enable features based on license
 - Prevent device cloning
 - Verify licenses without internet connection
-- (NEW) Encrypt payload data to protect commercial secrets
+- Encrypt payload data to protect commercial secrets (AES-256-CBC)
+- Protect plain-text keys from flash dumps with 32-bit Obfuscation
 
 Tested on Arduino **ESP32 Core 2.0.17** (Recommended), Wemos D1 Mini (ESP8266), ESP32 DevKit, ESP32S, ESP32-S3.
 
 ---
 
-## What's New in v2.1.1 🚀
+## Official Web Tools 🛠️
+To simplify key generation and firmware hardening, use our official online web tools:
+- 🛡️ **Secret Key Obfuscator:** [https://app.fanselectronics.com/tools/secret-key-obfuscation/](https://app.fanselectronics.com/tools/secret-key-obfuscation/)  
+  *Converts plain-text keys (Product Secret, AES, HMAC, ECDSA) into hardened 32-bit PROGMEM byte arrays.*
+- 🔑 **Secret Key Generator:** [https://app.fanselectronics.com/tools/secret-key-generator/](https://app.fanselectronics.com/tools/secret-key-generator/)  
+  *Generates ECDSA NIST P-256 keypairs, high-entropy HMAC keys, AES keys, and Product Secrets.*
+-  🔐 **[FEL_Generator.exe](https://github.com/Vean/FansElectronics_License/raw/refs/heads/V2.X.X/tools/FEL_Generator.exe)** *Used to generate the license.json file. This application is Windows-only and requires .NET Core 6.x.*
+---
 
-New update focused on **Payload Confidentiality (AES-256-CBC)** to fully encrypt the JSON payload + fixing cache system.
-<p align="justify">AES in this library <b>is not a standalone</b> signature mode. Instead, it acts as an encryption layer combined with our signature modes (Encrypt-then-MAC architecture). For example, combining AES with ECDSA creates FEL_MODE_ECDSA_AES.</p>
-<small><b>Note:</b> If you want to run AES as a standalone encryption without any cryptographic signature validation, that is exactly what <b>FEL_MODE_LIGHT_AES</b> does!</small>
+## What's New in v2.2.0 🚀
 
-### Breaking change (one-line migration)`
+### 🛡️ Firmware Hardening: 32-bit Multi-Byte Rolling XOR Obfuscation
+Storing secrets (HMAC keys, AES keys, Product Secret, or ECDSA Public Keys) as plain strings makes firmware vulnerable to simple flash memory dumps (`strings firmware.bin`).
+
+In **v2.2.0**, we introduce a single unified `decodeSecret()` powered by **32-bit Rolling XOR + Dynamic Index Salting**:
+- Keys remain scrambled in Flash memory (`PROGMEM`).
+- Keys are decoded dynamically into RAM only during verification and cleared when done.
+- Immune to single-byte frequency analysis and brute-force attacks.
+
 ```cpp
-// v1.x
-FansElectronics_License license(HMAC);
+#define XOR_KEY 0x12345678UL
 
-// v2.0.X
-StaticJsonDocument<1024> doc;   // ESP8266
-DynamicJsonDocument doc(1024);  // ESP32
-FansElectronics_License license(doc, HMAC);
+// Byte array generated via Fans Electronics Obfuscator
+const uint8_t SECRET_OBF[] PROGMEM = { 0x5F, 0x44, 0x6E, 0x48, 0x44, 0xBC, 0x6E, 0x7E, 0x56 };
 
-// v2.1.X
-FansElectronics_License license(doc, FEL_MODE_HMAC);
-LicenseStatus status = license.verifyLicense(
-    HMAC_SECRET,     // Public Key (ECDSA) or HMAC Secret
-    PRODUCT_SECRET,  // Device binding secret
-    FEL_ID_LEN_64,   // ID Length
-    true,            // Use Flash Size
-    AES_SECRET       // (NEW) AES Decryption Key
-);
+// Decode at runtime (RAM-only)
+String PRODUCT_SECRET = license.decodeSecret(SECRET_OBF, sizeof(SECRET_OBF), XOR_KEY);
 ```
 
-### Why this change?
-Previously the JSON memory size was fixed inside the library.  
-Now **users control the memory size**, making the library stable for production projects.
+---
 
-Benefits:
-- No need to edit library source anymore
-- Safer for ESP8266 heap
-- Scalable for large projects
-- (NEW) AES-256-CBC payload encryption support
+## What Was New in v2.1.1 📦
+- **Payload Confidentiality (AES-256-CBC):** Full JSON payload encryption using Encrypt-then-MAC architecture (`FEL_MODE_LIGHT_AES`, `FEL_MODE_HMAC_AES`, `FEL_MODE_ECDSA_AES`).
+- Cache reset and verification pipeline stability improvements.
+
 ---
 
 ## Features ✨
 - Unique hardware-based Device ID
 - Offline license verification
 - Multiple encryption modes (LIGHT, HMAC, ECDSA, AES)
+- Firmware hardening via 32-bit secret obfuscation
 - Supports ESP32 & ESP8266
 - JSON-based license format
-- License generator tools (CLI & Web)
+- Dedicated web tools suite
 - Production-ready architecture
 
 ---
+
 ## Security Modes 🔒
 
 | Mode | Platform | Security | Description | Status |
@@ -73,17 +75,10 @@ Benefits:
 | LIGHT | ESP32 & ESP8266 | ⭐😅 | Device binding only (No cryptography) | ✅ Implemented |
 | HMAC | ESP32 & ESP8266 | ⭐⭐⭐ | Secret-key signature (Authenticity) | ✅ Implemented |
 | ECDSA | ESP32 | ⭐⭐⭐⭐ | Public-key signature (High Authenticity) | ✅ Implemented |
-| LIGHT_AES | ESP32 & ESP8266 | ⭐⭐⭐ | Device binding + AES Encrypted payload only (Confidentiality)) | ✅ Implemented |
+| LIGHT_AES | ESP32 & ESP8266 | ⭐⭐⭐ | Device binding + AES Encrypted payload only (Confidentiality) | ✅ Implemented |
 | HMAC_AES | ESP32 & ESP8266 | ⭐⭐⭐⭐⭐ | Encrypt-then-MAC (Confidentiality + Secret-key) | ✅ Implemented |
 | ECDSA_AES | ESP32 | ⭐⭐⭐⭐⭐⭐ | Ultimate (Confidentiality + Public-key) | ✅ Implemented |
-| ED25519 | ESP32 | ⭐⭐⭐⭐⭐ | Signature modern public key (ESP32 Core > 3.X) | 🚧 Next Update? |
-
-
-Perfect for:
-- Commercial IoT products
-- LED controller / display systems
-- 24/7 offline devices
-- OEM / mass production hardware
+| ED25519 | ESP32 | ⭐⭐⭐⭐⭐ | Signature modern public key (ESP32 Core > 3.X) | 🚧 Next Update |
 
 ---
 
@@ -94,7 +89,7 @@ Why not ArduinoJson v7?
 - ESP8266 requires deterministic memory allocation
 - v7 uses dynamic heap allocation
 - v6 fixed memory pool is more stable for long-running IoT devices
-<small><b>Note:</b> If using <b>ESP32</b>, use ArduinoJson V7 no problem.</small>
+<small><b>Note:</b> If using <b>ESP32</b>, ArduinoJson v7 is supported without issue.</small>
 
 ---
 
@@ -123,6 +118,7 @@ Invalid license → device locked
   "signature": "BASE64_SIGNATURE"
 }
 ```
+
 ---
 
 ## Created By 💻

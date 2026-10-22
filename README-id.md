@@ -12,60 +12,63 @@ Pustaka ini membantu pengembang IoT dan produsen perangkat keras untuk:
 - Mengaktifkan fitur berdasarkan lisensi
 - Mencegah kloning perangkat
 - Memverifikasi lisensi tanpa koneksi internet
-- (BARU) Mengenkripsi data payload untuk melindungi rahasia komersial
+- Mengenkripsi data payload untuk melindungi rahasia komersial (AES-256-CBC)
+- Melindungi kunci rahasia dari dump memori flash dengan Obfuscation 32-bit
 
 Telah diuji pada Arduino **ESP32 Core 2.0.17** (Direkomendasikan), Wemos D1 Mini (ESP8266), ESP32 DevKit, ESP32S, ESP32-S3.
 
 ---
 
-## Apa yang Baru di v2.1.1 🚀
+## Tools Web Resmi 🛠️
+Untuk mempermudah pembuatan kunci dan pengamanan firmware, gunakan tools berbasis web resmi kami:
+- 🛡️ **Secret Key Obfuscator:** [https://app.fanselectronics.com/tools/secret-key-obfuscation/](https://app.fanselectronics.com/tools/secret-key-obfuscation/)  
+  *Mengubah kunci teks biasa (Product Secret, AES, HMAC, ECDSA) menjadi array byte PROGMEM 32-bit yang tersamar.*
+- 🔑 **Secret Key Generator:** [https://app.fanselectronics.com/tools/secret-key-generator/](https://app.fanselectronics.com/tools/secret-key-generator/)  
+  *Membuat pasangan kunci ECDSA NIST P-256, HMAC keys, AES keys, dan Product Secret.*
+-  🔐 **[FEL_Generator.exe](https://github.com/Vean/FansElectronics_License/raw/refs/heads/V2.X.X/tools/FEL_Generator.exe)** *untuk generate file lisence.json. Aplikasi ini khusus Windows saja, dan membutuhkan Net Core 6.x*
 
-Pembaruan baru berfokus pada **Kerahasiaan Payload (AES-256-CBC)** untuk mengenkripsi payload JSON secara menyeluruh + perbaikan sistem cache.
-<p align="justify">AES dalam pustaka ini <b>bukanlah</b> mode tanda tangan (signature) yang berdiri sendiri. Sebaliknya, AES berfungsi sebagai lapisan enkripsi yang dikombinasikan dengan mode tanda tangan kami (arsitektur Encrypt-then-MAC). Sebagai contoh, menggabungkan AES dengan ECDSA akan menghasilkan FEL_MODE_ECDSA_AES.</p>
-<small><b>Catatan:</b> Jika Anda ingin menjalankan AES sebagai enkripsi mandiri tanpa validasi tanda tangan kriptografis apa pun, itulah fungsi dari <b>FEL_MODE_LIGHT_AES</b>!</small>
+---
 
-### Perubahan yang memengaruhi kode lama (migrasi satu baris)`
+## Apa yang Baru di v2.2.0 🚀
+
+### 🛡️ Firmware Hardening: Obfuscation 32-bit Rolling XOR
+Menyimpan kunci rahasia (HMAC, AES, Product Secret, maupun Public Key ECDSA) dalam bentuk teks biasa sangat rentan terbaca saat memori Flash di-dump (`strings firmware.bin`).
+
+Pada **v2.2.0**, kami menghadirkan fungsi terpadu `decodeSecret()` berbasis algoritma **32-bit Rolling XOR + Dynamic Index Salting**:
+- Kunci tetap tersamar di Flash memory (`PROGMEM`).
+- Kunci hanya direkonstruksi ke RAM sementara saat proses verifikasi berlangsung.
+- Kebal terhadap analisis frekuensi byte dan serangan brute force 1-byte.
+
 ```cpp
-// v1.x
-FansElectronics_License license(HMAC);
+#define XOR_KEY 0x12345678UL
 
-// v2.0.X
-StaticJsonDocument<1024> doc; // ESP8266
-DynamicJsonDocument doc(1024); // ESP32
-FansElectronics_License license(doc, HMAC);
+// Array byte yang dibuat melalui Fans Electronics Obfuscator
+const uint8_t SECRET_OBF[] PROGMEM = { 0x5F, 0x44, 0x6E, 0x48, 0x44, 0xBC, 0x6E, 0x7E, 0x56 };
 
-// v2.1.X
-FansElectronics_License license(doc, FEL_MODE_HMAC);
-LicenseStatus status = license.verifyLicense(
-HMAC_SECRET,     // Kunci Publik (ECDSA) atau HMAC Secret
-PRODUCT_SECRET,  // Secret untuk pengikatan perangkat (device binding)
-FEL_ID_LEN_64,   // Panjang ID
-true,            // Gunakan Ukuran Flash
-AES_SECRET       // (BARU) Kunci Dekripsi AES
-);
+// Decode saat runtime (hanya ada di RAM)
+String PRODUCT_SECRET = license.decodeSecret(SECRET_OBF, sizeof(SECRET_OBF), XOR_KEY);
 ```
 
-### Mengapa ada perubahan ini?
-Sebelumnya, ukuran memori JSON ditetapkan secara statis di dalam pustaka (library).
-Sekarang **pengguna dapat mengatur ukuran memori**, menjadikan pustaka ini stabil untuk proyek produksi.
+---
 
-Manfaat:
-- Tidak perlu lagi mengubah kode sumber pustaka
-- Lebih aman bagi heap ESP8266
-- Dapat diskalakan untuk proyek besar
-- (BARU) Dukungan enkripsi payload AES-256-CBC
+## Apa yang Ada di v2.1.1 Sebelumnya 📦
+- **Kerahasiaan Payload (AES-256-CBC):** Enkripsi payload JSON menggunakan arsitektur Encrypt-then-MAC (`FEL_MODE_LIGHT_AES`, `FEL_MODE_HMAC_AES`, `FEL_MODE_ECDSA_AES`).
+- Perbaikan sistem cache dan kestabilan verifikasi lisensi.
+
 ---
 
 ## Fitur ✨
 - ID Perangkat unik berbasis perangkat keras
 - Verifikasi lisensi secara offline
 - Berbagai mode enkripsi (LIGHT, HMAC, ECDSA, AES)
+- Pengerasan firmware melalui 32-bit secret obfuscation
 - Mendukung ESP32 dan ESP8266
 - Format lisensi berbasis JSON
-- Alat pembuat lisensi (CLI & Web)
+- Rangkaian tools web generator resmi
 - Arsitektur siap produksi
 
 ---
+
 ## Mode Keamanan 🔒
 
 | Mode | Platform | Keamanan | Deskripsi | Status |
@@ -76,14 +79,7 @@ Manfaat:
 | LIGHT_AES | ESP32 & ESP8266 | ⭐⭐⭐ | Pengikatan perangkat + Payload terenkripsi AES saja (Kerahasiaan) | ✅ Diimplementasikan |
 | HMAC_AES | ESP32 & ESP8266 | ⭐⭐⭐⭐⭐ | Encrypt-then-MAC (Kerahasiaan + Kunci rahasia) | ✅ Diimplementasikan |
 | ECDSA_AES | ESP32 | ⭐⭐⭐⭐⭐⭐ | Tingkat tertinggi (Kerahasiaan + Kunci publik) | ✅ Diimplementasikan |
-| ED25519 | ESP32 | ⭐⭐⭐⭐⭐ | Tanda tangan kunci publik modern (ESP32 Core > 3.X) | 🚧 Pembaruan Berikutnya? |
-
-
-Cocok untuk:
-- Produk IoT komersial
-- Pengontrol LED / sistem tampilan
-- Perangkat offline yang beroperasi 24/7
-- Perangkat keras OEM / produksi massal
+| ED25519 | ESP32 | ⭐⭐⭐⭐⭐ | Tanda tangan kunci publik modern (ESP32 Core > 3.X) | 🚧 Pembaruan Berikutnya |
 
 ---
 
@@ -94,7 +90,7 @@ Mengapa bukan ArduinoJson v7?
 - ESP8266 memerlukan alokasi memori yang deterministik
 - v7 menggunakan alokasi *heap* dinamis
 - *Fixed memory pool* pada v6 lebih stabil untuk perangkat IoT yang beroperasi dalam jangka waktu lama
-<small><b>Catatan:</b> Jika menggunakan <b>ESP32</b>, tidak masalah menggunakan ArduinoJson V7.</small>
+<small><b>Catatan:</b> Jika menggunakan <b>ESP32</b>, ArduinoJson v7 dapat digunakan tanpa kendala.</small>
 
 ---
 
@@ -105,7 +101,7 @@ Mengapa bukan ArduinoJson v7?
 3️⃣ Lisensi disimpan di LittleFS  
 4️⃣ Firmware memverifikasi lisensi saat *booting*
 
-Lisensi valid → fitur diaktifkan
+Lisensi valid → fitur diaktifkan  
 Lisensi tidak valid → perangkat terkunci
 
 ---
@@ -114,15 +110,16 @@ Lisensi tidak valid → perangkat terkunci
 
 ```json
 {
-"data": {
-"device_id": "ABC123",
-"product": "PRODUCT NAME",
-"serial": "SN001",
-"panel": 64
-},
-"signature": "BASE64_SIGNATURE"
+  "data": {
+    "device_id": "ABC123",
+    "product": "PRODUCT NAME",
+    "serial": "SN001",
+    "panel": 64
+  },
+  "signature": "BASE64_SIGNATURE"
 }
 ```
+
 ---
 
 ## Dibuat Oleh 💻
