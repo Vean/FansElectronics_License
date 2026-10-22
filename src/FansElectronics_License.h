@@ -4,10 +4,10 @@
   Wrote by    : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-06
-  Updated     : 2026-10-14
-  Version     : 2.1.1
+  Updated     : 2026-10-22
+  Version     : 2.2.0
   Website     : https://www.fanselectronics.com
-  Repository  : https://www.github.com/Vean/FansElectronics_License
+  Repository  : https://github.com/Vean/FansElectronics_License
 
   Universal offline licensing system for ESP32 & ESP8266
   Supports LIGHT, HMAC, ECDSA and AES verification modes.
@@ -22,7 +22,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-#define FEL_VERSION "2.1.1"
+#define FEL_VERSION "2.2.0"
 
 // --- Bit strength naming ---
 #define FEL_ID_64BIT 16
@@ -38,7 +38,7 @@
 #define FEL_ID_LEN_48 FEL_ID_192BIT
 #define FEL_ID_LEN_64 FEL_ID_256BIT
 
-// --- Encrytion Type ---
+// --- Encryption Type ---
 #define FEL_MODE_LIGHT 0
 #define FEL_MODE_HMAC 1
 #define FEL_MODE_ECDSA 2
@@ -82,7 +82,10 @@ public:
 
   FEL_DeviceInfo getDeviceInfo();
   String generateDeviceID(String secret, uint8_t idLength = FEL_ID_128BIT, bool useFlashSize = true);
-  String decodeSecret(const uint8_t *data, size_t len, uint8_t xorKey);
+
+  // ⭐ v2.2.0 Single Mode: 32-bit Multi-Byte Rolling XOR + Dynamic Salt
+  String decodeSecret(const uint8_t *data, size_t len, uint32_t xorKey);
+
   String parsePublicKeyToString(const char *key);
 
   String getString(const char *key);

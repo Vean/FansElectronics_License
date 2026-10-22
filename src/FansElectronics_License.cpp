@@ -743,19 +743,27 @@ String FansElectronics_License::parsePublicKeyToString(const char *pem)
 }
 
 // =====================================================
-// Decode XOR Obfuscated Secret (PROGMEM Safe)
+// Decode XOR Obfuscated Secret (v2.2.0 - 32-bit Rolling XOR + Salt)
+// PROGMEM Safe untuk ESP32 & ESP8266
 // =====================================================
-String FansElectronics_License::decodeSecret(const uint8_t *data, size_t len, uint8_t xorKey)
+String FansElectronics_License::decodeSecret(const uint8_t *data, size_t len, uint32_t xorKey)
 {
   char decoded[len + 1];
 
+  // Ekstrak 4 byte dari xorKey (Big Endian order)
+  const uint8_t k[4] = {
+      (uint8_t)((xorKey >> 24) & 0xFF),
+      (uint8_t)((xorKey >> 16) & 0xFF),
+      (uint8_t)((xorKey >> 8) & 0xFF),
+      (uint8_t)(xorKey & 0xFF)};
+
   for (size_t i = 0; i < len; i++)
   {
-#if defined(ESP32)
-    decoded[i] = pgm_read_byte(&data[i]) ^ xorKey;
-#elif defined(ESP8266)
-    decoded[i] = pgm_read_byte(&data[i]) ^ xorKey;
-#endif
+    uint8_t streamByte = k[i % 4];
+    uint8_t salt = (uint8_t)((i * 17) & 0xFF);
+    uint8_t mask = streamByte ^ salt;
+
+    decoded[i] = pgm_read_byte(&data[i]) ^ mask;
   }
 
   decoded[len] = '\0';
