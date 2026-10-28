@@ -25,10 +25,42 @@ To simplify key generation and firmware hardening, use our official online web t
   *Converts plain-text keys (Product Secret, AES, HMAC, ECDSA) into hardened 32-bit PROGMEM byte arrays.*
 - 🔑 **Secret Key Generator:** [https://app.fanselectronics.com/tools/secret-key-generator/](https://app.fanselectronics.com/tools/secret-key-generator/)  
   *Generates ECDSA NIST P-256 keypairs, high-entropy HMAC keys, AES keys, and Product Secrets.*
--  🔐 **[FEL_Generator.exe](https://github.com/Vean/FansElectronics_License/raw/refs/heads/V2.X.X/tools/FEL_Generator.exe)** *Used to generate the license.json file. This application is Windows-only and requires .NET Core 6.x.*
+- 🔐 **[FEL_Generator.exe](https://github.com/Vean/FansElectronics_License/raw/refs/heads/V2.X.X/tools/FEL_Generator.exe)** *Used to generate the license.json file. This application is Windows-only and requires .NET Core 6.x.*
+
 ---
 
-## What's New in v2.2.0 🚀
+## What's New in v2.3.0 🚀
+
+### 🛡️ Hardware Entropy Anti-Tamper & Instant Gate
+In previous versions, runtime license state relied on standard boolean variables, which could be vulnerable to live memory patching (`0x00` to `0x01`). 
+
+In **v2.3.0**, authorization is tied directly to physical silicon:
+- **32-bit Hardware Entropy Checksum:** Memory validation no longer relies on a simple boolean flag. The library dynamically computes a 32-bit token derived from physical silicon eFuse/MAC and product keys. Injecting `1` into memory will no longer bypass authorization.
+- **Instant `license.isValid()` Execution:** No need to re-run expensive cryptographic verification routines (`verifyLicense`) periodically. `isValid()` evaluates in nanoseconds via a single CPU integer comparison—completely zero flicker for LED matrix panels and zero audio glitches.
+- **Debug Guard Optimization:** `printLicenseData()` is protected by `#define FEL_ENABLE_DEBUG true`. Compile with debug disabled to automatically strip all debug license routines and save Flash/RAM.
+
+```cpp
+#if DEBUGGING
+  #define FEL_ENABLE_DEBUG true
+#else
+  #define FEL_ENABLE_DEBUG false
+#endif
+
+#include <FansElectronics_License.h>
+
+// Lightweight gate directly inside your core loop / rendering routine:
+void loop() {
+  if (license.isValid()) {
+    // Normal operation (render panel, sensors, audio)
+  } else {
+    // Graceful silent disruption / locked demo mode
+  }
+}
+```
+
+---
+
+## What Was New in v2.2.0 📦
 
 ### 🛡️ Firmware Hardening: 32-bit Multi-Byte Rolling XOR Obfuscation
 Storing secrets (HMAC keys, AES keys, Product Secret, or ECDSA Public Keys) as plain strings makes firmware vulnerable to simple flash memory dumps (`strings firmware.bin`).
@@ -61,6 +93,7 @@ String PRODUCT_SECRET = license.decodeSecret(SECRET_OBF, sizeof(SECRET_OBF), XOR
 - Offline license verification
 - Multiple encryption modes (LIGHT, HMAC, ECDSA, AES)
 - Firmware hardening via 32-bit secret obfuscation
+- Anti-tampering memory integrity with 32-bit silicon checksum
 - Supports ESP32 & ESP8266
 - JSON-based license format
 - Dedicated web tools suite
@@ -118,6 +151,14 @@ Invalid license → device locked
   "signature": "BASE64_SIGNATURE"
 }
 ```
+
+---
+
+## Security Advisory & Limitations ⚠️
+- **Software-Level vs. Hardware-Level Protection:** This library provides state-of-the-art software-based protection for ESP32 and ESP8266. However, software protection alone cannot fully defend against sophisticated physical attacks such as live hardware debugging (JTAG) or physical chip decapping.
+- **Production Recommendation (ESP32):** For high-stakes commercial products, it is strongly advised to combine this library with native ESP-IDF hardware security features:
+  - **Flash Encryption:** Prevents reading raw firmware from SPI flash chips.
+  - **Secure Boot:** Ensures only cryptographically signed firmware can execute.
 
 ---
 
