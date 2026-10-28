@@ -1,20 +1,23 @@
-/* ============================================================
+/*------------------------------------------------------------------------------
   FansElectronics License for ESP32 & ESP8266 Library
-  ------------------------------------------------------------
+  ------------------------------------------------------------------------------
   Wrote by    : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-06
-  Updated     : 2026-10-22
-  Version     : 2.2.0
+  Updated     : 2026-10-28
+  Version     : 2.3.0
   Website     : https://www.fanselectronics.com
   Repository  : https://github.com/Vean/FansElectronics_License
 
   Universal offline licensing system for ESP32 & ESP8266
   Supports LIGHT, HMAC, ECDSA and AES verification modes.
-============================================================ */
+*/
 
 #pragma once
 
+/*------------------------------------------------------------------------------
+  Validasi Board Arsitektur
+*/
 #if !defined(ESP32) && !defined(ESP8266)
 #error "FansElectronics_License supports only ESP32 and ESP8266."
 #endif
@@ -22,23 +25,36 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-#define FEL_VERSION "2.2.0"
+/*------------------------------------------------------------------------------
+  Versi & Konfigurasi Preprocessor Keamanan
+*/
+#define FEL_VERSION "2.3.0"
 
-// --- Bit strength naming ---
+// Aktifkan baris ini hanya saat fase development/debugging.
+// Komentari baris ini saat rilis produksi agar teks debug hilang dari biner (.bin).
+// #define FEL_ENABLE_DEBUG
+
+/*------------------------------------------------------------------------------
+  Konstanta Bit Strength Device ID
+*/
 #define FEL_ID_64BIT 16
 #define FEL_ID_96BIT 24
 #define FEL_ID_128BIT 32 // ⭐ Default
 #define FEL_ID_192BIT 48
 #define FEL_ID_256BIT 64
 
-// --- Character length alias ---
+/*------------------------------------------------------------------------------
+  Alias Panjang Karakter ID
+*/
 #define FEL_ID_LEN_16 FEL_ID_64BIT
 #define FEL_ID_LEN_24 FEL_ID_96BIT
 #define FEL_ID_LEN_32 FEL_ID_128BIT
 #define FEL_ID_LEN_48 FEL_ID_192BIT
 #define FEL_ID_LEN_64 FEL_ID_256BIT
 
-// --- Encryption Type ---
+/*------------------------------------------------------------------------------
+  Tipe Mode Enkripsi & Verifikasi
+*/
 #define FEL_MODE_LIGHT 0
 #define FEL_MODE_HMAC 1
 #define FEL_MODE_ECDSA 2
@@ -46,6 +62,9 @@
 #define FEL_MODE_HMAC_AES 4
 #define FEL_MODE_ECDSA_AES 5
 
+/*------------------------------------------------------------------------------
+  Daftar Status Kode Hasil Verifikasi
+*/
 enum LicenseStatus
 {
   FEL_LICENSE_FILE_NOT_FOUND = 0,
@@ -59,6 +78,9 @@ enum LicenseStatus
   FEL_LICENSE_AES_DECRYPT_FAIL = 8
 };
 
+/*------------------------------------------------------------------------------
+  Struktur Informasi Identitas Hardware
+*/
 struct FEL_DeviceInfo
 {
   String mac;
@@ -66,6 +88,9 @@ struct FEL_DeviceInfo
   String flashSize;
 };
 
+/*------------------------------------------------------------------------------
+  Definisi Kelas Utama FansElectronics_License
+*/
 class FansElectronics_License
 {
 public:
@@ -94,21 +119,35 @@ public:
   float getFloat(const char *key, float defaultVal = 0);
   double getDouble(const char *key, double defaultVal = 0);
   bool hasKey(const char *key);
+
+  // Status verifikasi cepat di loop()
   bool isValid();
+  bool isValid(const String &productSecret);
+
   bool isLoaded();
   String getModeString();
   String getLibraryVersion();
+
+#ifdef FEL_ENABLE_DEBUG
   void printDebug(Stream &s);
   void printLicenseData(Stream &s);
+#endif
 
   JsonDocument &getLicenseJSON();
   String getLicensedDeviceID();
+
+  // Generator Checksum Hardware Entropy (32-bit Token Mask)
+  uint32_t getDeviceEntropy(const String &secret);
 
 private:
   JsonDocument &_doc;
   uint8_t _mode;
   bool _licenseLoaded = false;
-  bool _licenseVerified = false;
+
+  // Checksum dynamic entropy untuk menggantikan boolean statis
+  uint32_t _authChecksum = 0;
+  String _savedSecret = "";
+
   LicenseStatus _lastStatus = FEL_LICENSE_FILE_NOT_FOUND;
 
   String licenseDataString;

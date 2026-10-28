@@ -1,3 +1,6 @@
+/*------------------------------------------------------------------------------
+  Implementasi Metode FansElectronics_License
+*/
 #include "FansElectronics_License.h"
 #include <LittleFS.h>
 
@@ -13,9 +16,9 @@
 #include <bearssl/bearssl_block.h>
 #endif
 
-// =====================================================
-// SIMPLE BASE64 DECODER (untuk signature)
-// =====================================================
+/*------------------------------------------------------------------------------
+  Simple Base64 Decoder (Untuk Signature & Payload)
+*/
 static const unsigned char b64_table[65] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -46,18 +49,18 @@ int FEL_base64_decode(uint8_t *out, const char *in, int len)
   return j;
 }
 
-// =====================================================
-// Delay anti tempering (misalnya saat verifikasi gagal)
-// =====================================================
+/*------------------------------------------------------------------------------
+  Delay Anti-Tampering (Dijalankan Saat Verifikasi Gagal)
+*/
 void FEL_securityDelay()
 {
-  // Delay anti tempering, 3 seconds
+  // Delay anti-tampering 3 detik untuk memperlambat serangan brute-force
   delay(3000);
 }
 
-// =====================================================
-// SHA256 helper (Aman untuk Data Biner / Tanpa String)
-// =====================================================
+/*------------------------------------------------------------------------------
+  SHA256 Helper (Aman untuk Data Biner / Tanpa String)
+*/
 void FEL_sha256_binary(const uint8_t *input, size_t length, uint8_t output[32])
 {
 #if defined(ESP32)
@@ -70,15 +73,14 @@ void FEL_sha256_binary(const uint8_t *input, size_t length, uint8_t output[32])
 #endif
 }
 
-// Wrapper tetap dipertahankan agar tidak merusak fungsi lama Anda
 void FEL_sha256(const String &input, uint8_t output[32])
 {
   FEL_sha256_binary((const uint8_t *)input.c_str(), input.length(), output);
 }
 
-// =====================================================
-// HMAC SHA256 (VERSI PERBAIKAN - AMAN KARAKTER '6' / 0x00)
-// =====================================================
+/*------------------------------------------------------------------------------
+  HMAC SHA256 (Aman untuk Karakter '6' / 0x00)
+*/
 void FEL_hmac_sha256(const String &key, const String &message, uint8_t out[32])
 {
   const uint8_t blockSize = 64;
@@ -119,9 +121,9 @@ void FEL_hmac_sha256(const String &key, const String &message, uint8_t out[32])
   FEL_sha256_binary(outerBuf, outerLen, out);
 }
 
-// =====================================================
-// Constructor
-// =====================================================
+/*------------------------------------------------------------------------------
+  Inisialisasi Constructor Kelas
+*/
 FansElectronics_License::FansElectronics_License(JsonDocument &doc, uint8_t mode)
     : _doc(doc)
 {
@@ -132,22 +134,23 @@ FansElectronics_License::FansElectronics_License(JsonDocument &doc, uint8_t mode
 #endif
 }
 
-// =====================================================
-// CLEAR CACHE (Reset semua status dan data di RAM)
-// =====================================================
+/*------------------------------------------------------------------------------
+  Clear Cache (Reset Status, Token Keamanan, dan Data di RAM)
+*/
 void FansElectronics_License::clearCache()
 {
   _licenseLoaded = false;
-  _licenseVerified = false;
+  _authChecksum = 0;
+  _savedSecret = "";
   _lastStatus = FEL_LICENSE_FILE_NOT_FOUND;
   licenseDataString = "";
   licenseSignature = "";
   _doc.clear();
 }
 
-// =====================================================
-// LOAD LICENSE FROM LITTLEFS
-// =====================================================
+/*------------------------------------------------------------------------------
+  Load File Lisensi dari LittleFS
+*/
 bool FansElectronics_License::loadLicense(const char *path)
 {
   clearCache();
@@ -203,17 +206,20 @@ bool FansElectronics_License::loadLicense(const char *path)
   return true;
 }
 
-// =====================================================
-// VERIFY LICENSE
-// =====================================================
+/*------------------------------------------------------------------------------
+  Verifikasi Lisensi Menyeluruh (Stempel Kriptografi, AES, dan Device ID)
+*/
 LicenseStatus FansElectronics_License::verifyLicense(const char *cryptoKey,
                                                      String productSecret,
                                                      uint8_t idLength,
                                                      bool useFlashSize,
                                                      const char *aesKey)
 {
-  if (_licenseVerified)
+  // Cek apakah sudah terverifikasi sebelumnya menggunakan hardware entropy token
+  if (_authChecksum != 0 && _authChecksum == getDeviceEntropy(productSecret))
+  {
     return FEL_LICENSE_OK;
+  }
 
   if (!_licenseLoaded)
     return _lastStatus;
@@ -243,7 +249,7 @@ LicenseStatus FansElectronics_License::verifyLicense(const char *cryptoKey,
     return _lastStatus;
   }
 
-  // 2. PROSES DEKRIPSI AES (Hanya jika mode berakhiran _AES)
+  // 2. Proses Dekripsi AES (Hanya jika mode berakhiran _AES)
   if (_mode == FEL_MODE_LIGHT_AES || _mode == FEL_MODE_HMAC_AES || _mode == FEL_MODE_ECDSA_AES)
   {
     if (aesKey == NULL || strlen(aesKey) == 0)
@@ -350,14 +356,29 @@ LicenseStatus FansElectronics_License::verifyLicense(const char *cryptoKey,
     }
   }
 
-  _licenseVerified = true;
+  // Set Checksum Dynamic Hardware Entropy
+  _savedSecret = productSecret;
+  _authChecksum = getDeviceEntropy(productSecret);
   _lastStatus = FEL_LICENSE_OK;
   return FEL_LICENSE_OK;
 }
 
-// =====================================================
-// DEVICE INFO
-// =====================================================
+/*------------------------------------------------------------------------------
+  Device Entropy Checksum (32-bit Token Mask Berbasis Hardware)
+*/
+uint32_t FansElectronics_License::getDeviceEntropy(const String &secret)
+{
+  String devId = generateDeviceID(secret, FEL_ID_128BIT, true);
+  if (devId.length() < 8)
+    return 0;
+
+  // Konversi 8 karakter hex pertama menjadi nilai 32-bit integer unik
+  return (uint32_t)strtoul(devId.substring(0, 8).c_str(), NULL, 16);
+}
+
+/*------------------------------------------------------------------------------
+  Pengambilan Metadata Perangkat (MAC, Model Chip, Flash Size)
+*/
 FEL_DeviceInfo FansElectronics_License::getDeviceInfo()
 {
   FEL_DeviceInfo info;
@@ -376,9 +397,9 @@ FEL_DeviceInfo FansElectronics_License::getDeviceInfo()
   return info;
 }
 
-// =====================================================
-// DEVICE ID GENERATOR (CONFIGURABLE LENGTH)
-// =====================================================
+/*------------------------------------------------------------------------------
+  Device ID Generator (Configurable Length & Salt Binding)
+*/
 String FansElectronics_License::generateDeviceID(String secret,
                                                  uint8_t idLength,
                                                  bool useFlashSize)
@@ -389,7 +410,7 @@ String FansElectronics_License::generateDeviceID(String secret,
   if (idLength > 64)
     idLength = 64;
   if (idLength % 2 != 0)
-    idLength++; // must be even
+    idLength++; // Must be even
 
   uint8_t bytesToUse = idLength / 2;
 
@@ -407,7 +428,7 @@ String FansElectronics_License::generateDeviceID(String secret,
   uint8_t hash[32];
   FEL_sha256(input, hash);
 
-  // convert to HEX (custom length)
+  // Convert to HEX (custom length)
   char out[65];
 
   for (int i = 0; i < bytesToUse; i++)
@@ -418,9 +439,9 @@ String FansElectronics_License::generateDeviceID(String secret,
   return String(out);
 }
 
-// =====================================================
-// VERIFY SIGNATURE (Fixed v2.0.0 - Integration Mode)
-// =====================================================
+/*------------------------------------------------------------------------------
+  Verifikasi Signature Kriptografi (HMAC & ECDSA)
+*/
 bool FansElectronics_License::verifySignature(const char *key)
 {
   // 1. Jika mode LIGHT, signature tidak diverifikasi secara kriptografi
@@ -436,7 +457,7 @@ bool FansElectronics_License::verifySignature(const char *key)
   uint8_t hash[32];
   FEL_sha256(licenseDataString, hash);
 
-  // 3. Decode signature berformat Base64 (menggunakan decoder bawaan v1.1.0 Anda)
+  // 3. Decode signature berformat Base64
   uint8_t sig[128];
   int sig_len = FEL_base64_decode(sig, licenseSignature.c_str(), licenseSignature.length());
 
@@ -504,9 +525,9 @@ bool FansElectronics_License::verifySignature(const char *key)
   return false;
 }
 
-// =====================================================
-// CHECK IF LICENSE IS FOR THIS DEVICE (CONFIGURABLE ID LENGTH)
-// =====================================================
+/*------------------------------------------------------------------------------
+  Pemeriksaan Kesesuaian Device ID Lisensi dengan Hardware
+*/
 bool FansElectronics_License::isLicenseForDevice(String secret,
                                                  uint8_t idLength,
                                                  bool useFlashSize)
@@ -516,9 +537,9 @@ bool FansElectronics_License::isLicenseForDevice(String secret,
   return licensedID == currentID;
 }
 
-// =====================================================
-// Get Value JSON License key as String
-// =====================================================
+/*------------------------------------------------------------------------------
+  Parser Data JSON Lisensi (Getter Functions)
+*/
 String FansElectronics_License::getString(const char *key)
 {
   if (!_doc["data"].containsKey(key))
@@ -541,9 +562,6 @@ String FansElectronics_License::getString(const char *key)
   return "";
 }
 
-// =====================================================
-// Get Value JSON License key as Boolean
-// =====================================================
 bool FansElectronics_License::getBool(const char *key, bool defaultVal)
 {
   if (!_doc["data"].containsKey(key))
@@ -567,9 +585,6 @@ bool FansElectronics_License::getBool(const char *key, bool defaultVal)
   return defaultVal;
 }
 
-// =====================================================
-// Get Value JSON License key as Integer
-// =====================================================
 int FansElectronics_License::getInt(const char *key, int defaultVal)
 {
   if (!_doc["data"].containsKey(key))
@@ -580,6 +595,7 @@ int FansElectronics_License::getInt(const char *key, int defaultVal)
   if (v.is<int>() || v.is<long>())
     return v.as<int>();
 
+  // Ganti baris di bawah ini:
   if (v.is<const char *>())
     return String(v.as<const char *>()).toInt();
 
@@ -589,9 +605,6 @@ int FansElectronics_License::getInt(const char *key, int defaultVal)
   return defaultVal;
 }
 
-// =====================================================
-// Get Value JSON License key as Float
-// =====================================================
 float FansElectronics_License::getFloat(const char *key, float defaultVal)
 {
   if (!_doc["data"].containsKey(key))
@@ -611,9 +624,6 @@ float FansElectronics_License::getFloat(const char *key, float defaultVal)
   return defaultVal;
 }
 
-// =====================================================
-// Get Value JSON License key as Double
-// =====================================================
 double FansElectronics_License::getDouble(const char *key, double defaultVal)
 {
   if (!_doc["data"].containsKey(key))
@@ -633,48 +643,37 @@ double FansElectronics_License::getDouble(const char *key, double defaultVal)
   return defaultVal;
 }
 
-// =====================================================
-// Check Existing Key
-// =====================================================
 bool FansElectronics_License::hasKey(const char *key)
 {
   return _doc["data"].containsKey(key);
 }
 
-// =====================================================
-// Get JSON License
-// =====================================================
 JsonDocument &FansElectronics_License::getLicenseJSON()
 {
   return _doc;
 }
 
-// =====================================================
-// Get Device ID License
-// =====================================================
 String FansElectronics_License::getLicensedDeviceID()
 {
   return _doc["data"]["device_id"].as<String>();
 }
 
-// =====================================================
-// Printing Debugging Verify License
-// =====================================================
+/*------------------------------------------------------------------------------
+  Fungsi Debugging (Hanya Dikompilasi Jika FEL_ENABLE_DEBUG Aktif)
+*/
+#ifdef FEL_ENABLE_DEBUG
 void FansElectronics_License::printDebug(Stream &s)
 {
   s.println("===== LICENSE DEBUG =====");
   s.print("Loaded      : ");
   s.println(_licenseLoaded);
-  s.print("Verified    : ");
-  s.println(_licenseVerified);
+  s.print("Checksum    : 0x");
+  s.println(_authChecksum, HEX);
   s.print("Last Status : ");
   s.println((int)_lastStatus);
   s.println("=========================");
 }
 
-// =====================================================
-// Printing Debug All Data License
-// =====================================================
 void FansElectronics_License::printLicenseData(Stream &s)
 {
   if (!_licenseLoaded)
@@ -696,11 +695,11 @@ void FansElectronics_License::printLicenseData(Stream &s)
 
   s.println("========================");
 }
+#endif
 
-// =====================================================
-// Parse PUBLIC KEY PEM → Base64 only (PROGMEM SAFE)
-// hasil harus identik dengan PHP loadPublicKeyAsString()
-// =====================================================
+/*------------------------------------------------------------------------------
+  Parse Public Key PEM → Base64 Only (PROGMEM Safe)
+*/
 String FansElectronics_License::parsePublicKeyToString(const char *pem)
 {
   String out;
@@ -716,17 +715,17 @@ String FansElectronics_License::parsePublicKeyToString(const char *pem)
     if (c == 0)
       break;
 
-    // akhir baris (\n atau \r)
+    // Akhir baris (\n atau \r)
     if (c == '\n' || c == '\r')
     {
       line[idx] = '\0';
 
-      // skip header & footer
+      // Skip header & footer
       if (strstr(line, "BEGIN PUBLIC KEY") == NULL &&
           strstr(line, "END PUBLIC KEY") == NULL &&
           strlen(line) > 0)
       {
-        // ambil base64 di baris ini
+        // Ambil base64 di baris ini
         out += line;
       }
 
@@ -734,7 +733,7 @@ String FansElectronics_License::parsePublicKeyToString(const char *pem)
       continue;
     }
 
-    // simpan karakter ke buffer baris
+    // Simpan karakter ke buffer baris
     if (idx < sizeof(line) - 1)
       line[idx++] = c;
   }
@@ -742,10 +741,9 @@ String FansElectronics_License::parsePublicKeyToString(const char *pem)
   return out;
 }
 
-// =====================================================
-// Decode XOR Obfuscated Secret (v2.2.0 - 32-bit Rolling XOR + Salt)
-// PROGMEM Safe untuk ESP32 & ESP8266
-// =====================================================
+/*------------------------------------------------------------------------------
+  Decode XOR Obfuscated Secret (v2.2.0 - 32-bit Rolling XOR + Salt)
+*/
 String FansElectronics_License::decodeSecret(const uint8_t *data, size_t len, uint32_t xorKey)
 {
   char decoded[len + 1];
@@ -770,25 +768,34 @@ String FansElectronics_License::decodeSecret(const uint8_t *data, size_t len, ui
   return String(decoded);
 }
 
-// =====================================================
-// Check license verification result
-// =====================================================
+/*------------------------------------------------------------------------------
+  Pemeriksaan Status Validasi (Dynamic Entropy Token Masked)
+*/
 bool FansElectronics_License::isValid()
 {
-  return _licenseVerified;
+  if (_authChecksum == 0)
+    return false;
+
+  // Verifikasi cepat: Token harus sama persis dengan Hardware Entropy
+  return (_authChecksum == getDeviceEntropy(_savedSecret));
 }
 
-// =====================================================
-// Check license loaded state
-// =====================================================
+bool FansElectronics_License::isValid(const String &productSecret)
+{
+  if (_authChecksum == 0)
+    return false;
+
+  return (_authChecksum == getDeviceEntropy(productSecret));
+}
+
+/*------------------------------------------------------------------------------
+  Pemeriksaan Status File Terbaca & Versi Informasi
+*/
 bool FansElectronics_License::isLoaded()
 {
   return !licenseDataString.isEmpty();
 }
 
-// =====================================================
-// Get mode as readable string
-// =====================================================
 String FansElectronics_License::getModeString()
 {
   if (_mode == FEL_MODE_LIGHT)
@@ -806,9 +813,6 @@ String FansElectronics_License::getModeString()
   return "UNKNOWN";
 }
 
-// =====================================================
-// Get library version
-// =====================================================
 String FansElectronics_License::getLibraryVersion()
 {
   return FEL_VERSION;
