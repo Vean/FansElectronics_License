@@ -12,6 +12,8 @@ LicenseStatus	                KEYWORD1
 ########################################
 # Constants (LITERAL1)
 ########################################
+FEL_ENABLE_DEBUG                LITERAL1
+
 FEL_MODE_LIGHT	                LITERAL1
 FEL_MODE_HMAC	                LITERAL1
 FEL_MODE_ECDSA	                LITERAL1
@@ -50,6 +52,7 @@ getDeviceInfo	                KEYWORD2
 generateDeviceID	            KEYWORD2
 decodeSecret	                KEYWORD2
 parsePublicKeyToString	        KEYWORD2
+getDeviceEntropy                KEYWORD2
 
 getString	                    KEYWORD2
 getBool	                        KEYWORD2
@@ -62,6 +65,7 @@ printDebug	                    KEYWORD2
 printLicenseData	            KEYWORD2
 getLicenseJSON              	KEYWORD2
 getLicensedDeviceID         	KEYWORD2
+getDeviceEntropy
 
 isValid	                        KEYWORD2
 isLoaded	                    KEYWORD2
