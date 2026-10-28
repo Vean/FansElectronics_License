@@ -4,8 +4,8 @@
   Writer      : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-06
-  Updated     : 2026-08-21
-  Library     : FansElectronics_License v2.1.0
+  Updated     : 2026-10-28
+  Library     : FansElectronics_License v2.3.0
   Website     : https://www.fanselectronics.com
   Repository  : https://github.com/Vean/FansElectronics_License
   Example     : Get_DeviceID
@@ -27,7 +27,7 @@
 #define JSON_MEMORY 1024
 
 // EN: Set ESP8266 & ESP32 JSON Memory Type
-// ID: Set  ESP8266 & ESP32 JSON Tipe Memory
+// ID: Set ESP8266 & ESP32 JSON Tipe Memory
 #if defined(ESP8266)
 StaticJsonDocument<JSON_MEMORY> doc;
 #elif defined(ESP32)
@@ -36,38 +36,43 @@ DynamicJsonDocument doc(JSON_MEMORY);
 
 // EN: Create FansElectronics_License object in LIGHT mode
 // ID: Buat objek FansElectronics_License dalam mode LIGHT
-FansElectronics_License license(doc, FEL_MODE_LIGHT); // JSON doc, Encryption Type
+FansElectronics_License license(doc, FEL_MODE_LIGHT);
 
-//  EN: Setup function
-//  ID: Fungsi setup
+/*------------------------------------------------------------------------------
+  EN: Setup function
+  ID: Fungsi setup
+*/
 void setup()
 {
   // EN: Start Serial communication
   // ID: Mulai komunikasi Serial
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
 
   // EN: Device info
   // ID: Info perangkat
   auto info = license.getDeviceInfo();
-  Serial.println("MODEL : " + info.chipModel);
-  Serial.println("MAC   : " + info.mac);
+  Serial.println("MODEL       : " + info.chipModel);
+  Serial.println("MAC         : " + info.mac);
   Serial.println("FLASH SIZE  : " + info.flashSize);
 
   /*
   EN: Device ID is formed by combination of:
   - Chip Model (Automatically taken according to ESP32 / ESP8266 device)
   - MAC Address (Automatically taken from WiFi MAC Address, unique for each device)
-  - Flash Size (Optional, can be ignored if not needed change true / false on second parameter)
+  - Flash Size (Optional, can be ignored if not needed change true / false on third parameter)
   - Product Secret (You must define it yourself, different for each of your products)
-  ID: Device ID dapat bentuk dengan gambungan:
+  ID: Device ID dapat dibentuk dengan gabungan:
   - Chip Model (Otomatis diambil sesuai perangkat ESP32 / ESP8266)
   - MAC Address (Diambil otomatis dari WiFi MAC Address, unik untuk setiap perangkat)
-  - Flash Size (Opsi, dapat diabaikan jika tidak diperlukan ganti true / false pada parameter kedua)
+  - Flash Size (Opsi, dapat diabaikan jika tidak diperlukan ganti true / false pada parameter ketiga)
   - Product Secret (Anda harus mendefinisikan sendiri, berbeda untuk setiap produk Anda)
   */
 
-  String deviceID = license.generateDeviceID(PRODUCT_SECRET, true);
+  // EN: Default length is 128-bit (32 hex characters)
+  // ID: Panjang bawaan adalah 128-bit (32 karakter hex)
+  String deviceID = license.generateDeviceID(PRODUCT_SECRET, FEL_ID_128BIT, true);
   Serial.println();
   Serial.println("====== THIS IS DEVICE ID ======");
   Serial.println(deviceID);
@@ -77,8 +82,10 @@ void setup()
   // ID: Akhir dari setup
 }
 
-// EN: Loop function
-// ID: Fungsi loop
+/*------------------------------------------------------------------------------
+  EN: Loop function
+  ID: Fungsi loop
+*/
 void loop()
 {
   // EN: Main Program Loop

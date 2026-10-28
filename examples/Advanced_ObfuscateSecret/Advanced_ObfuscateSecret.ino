@@ -4,43 +4,35 @@
   Writer      : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-07
-  Updated     : 2026-10-22
-  Library     : FansElectronics_License v2.2.0
+  Updated     : 2026-10-28
+  Library     : FansElectronics_License v2.3.0
   Website     : https://www.fanselectronics.com
   Repository  : https://github.com/Vean/FansElectronics_License
-  Example     : Obfuscated_Secret (Full Obfuscation: Secret & Public Key)
+  Example     : Advanced_ObfuscateSecret
+
+  Copyright (c) 2016-2026 Fans Electronics
 ============================================================ */
 
 #include <ArduinoJson.h>
 #include <FansElectronics_License.h>
 
-/* ============================================================
-   SHARED XOR KEY (32-bit Master Obfuscation Key)
-============================================================ */
-// Kunci 32-bit yang sama untuk semua secret/key yang diobfuscate
+/*------------------------------------------------------------------------------
+  EN: SHARED XOR KEY (32-bit Master Obfuscation Key)
+  ID: Kunci 32-bit yang sama untuk semua secret/key yang diobfuscate
+*/
 #define XOR_KEY 0x12345678UL
 
-/* ============================================================
-   1. OBFUSCATED PRODUCT SECRET ("MY_SECRET")
-============================================================ */
-// Original Plaintext: "MY_SECRET"
+/*------------------------------------------------------------------------------
+  EN: 1. OBFUSCATED PRODUCT SECRET ("MY_SECRET")
+  ID: 1. Product Secret yang Diobfuscate ("MY_SECRET")
+*/
 const uint8_t SECRET_OBF[] PROGMEM = {
     0x5F, 0x44, 0x6E, 0x48, 0x44, 0xBC, 0x6E, 0x7E, 0x56};
 
-/* ============================================================
-   2. OBFUSCATED ECDSA PUBLIC KEY (PEM Format)
-============================================================ */
-/*
-   ORIGINAL PLAIN TEXT PUBLIC KEY (FOR REFERENCE):
-   ------------------------------------------------------------
-   -----BEGIN PUBLIC KEY-----
-   MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu2s2XllDI4fywu45IFhddil+7Egn
-   hVwhQLYTEp7VjGE/OlCWzeVPrx8cQxl25Fw1497TsNyW3TP+QxwVXbnaZw==
-   -----END PUBLIC KEY-----
-   ------------------------------------------------------------
+/*------------------------------------------------------------------------------
+  EN: 2. OBFUSCATED ECDSA PUBLIC KEY (PEM Format)
+  ID: 2. Public Key ECDSA yang Diobfuscate (Format PEM)
 */
-
-// Hasil obfuscate format PEM ECDSA di atas dengan XOR_KEY 0x12345678UL
 const uint8_t PUBLIC_KEY_OBF[] PROGMEM = {
     0x3F, 0x38, 0x1E, 0x07, 0x3F, 0x5F, 0x78, 0x75, 0x59, 0x54, 0x13, 0x62,
     0x61, 0x5F, 0x79, 0x47, 0x77, 0x41, 0x50, 0x73, 0x33, 0x2A, 0x0C, 0x15,
@@ -68,19 +60,26 @@ DynamicJsonDocument doc(JSON_MEMORY);
 
 FansElectronics_License license(doc, FEL_MODE_ECDSA);
 
+/*------------------------------------------------------------------------------
+  EN: Setup function
+  ID: Fungsi setup
+*/
 void setup()
 {
     Serial.begin(115200);
+    delay(1000);
     Serial.println("\n=== FULL OBFUSCATED SECRET & PUBLIC KEY ===");
 
-    // 1. Decode PRODUCT_SECRET ke RAM saat runtime
+    // EN: 1. Decode PRODUCT_SECRET to RAM at runtime
+    // ID: 1. Decode PRODUCT_SECRET ke RAM saat runtime
     String PRODUCT_SECRET = license.decodeSecret(
         SECRET_OBF,
         sizeof(SECRET_OBF),
         XOR_KEY);
     Serial.println("Secret      : " + PRODUCT_SECRET);
 
-    // 2. Decode PUBLIC_KEY ke RAM saat runtime menggunakan XOR_KEY yang sama
+    // EN: 2. Decode PUBLIC_KEY to RAM at runtime using same XOR_KEY
+    // ID: 2. Decode PUBLIC_KEY ke RAM saat runtime menggunakan XOR_KEY yang sama
     String PUBLIC_KEY = license.decodeSecret(
         PUBLIC_KEY_OBF,
         sizeof(PUBLIC_KEY_OBF),
@@ -103,7 +102,8 @@ void setup()
         return;
     }
 
-    // Verifikasi lisensi menggunakan string hasil decode (.c_str())
+    // EN: Verify license using decoded strings (.c_str())
+    // ID: Verifikasi lisensi menggunakan string hasil decode (.c_str())
     LicenseStatus status = license.verifyLicense(
         PUBLIC_KEY.c_str(),
         PRODUCT_SECRET);
@@ -117,9 +117,31 @@ void setup()
         Serial.println("❌ License Invalid");
     }
 
+#ifdef FEL_ENABLE_DEBUG
+    // EN: Print license data
+    // ID: Cetak data lisensi
     license.printLicenseData(Serial);
+#endif
 }
 
+/*------------------------------------------------------------------------------
+  EN: Loop function
+  ID: Fungsi loop
+*/
 void loop()
 {
+    // EN: Runtime hardware entropy token verification
+    // ID: Verifikasi token runtime berbasis hardware entropy
+    if (license.isValid())
+    {
+        // EN: Main Program Loop (License Valid)
+        // ID: Program Utama Loop (Lisensi Sah)
+    }
+    else
+    {
+        // EN: System Locked / Unauthorized
+        // ID: Sistem Terkunci / Tidak Berlisensi
+    }
+
+    delay(1000);
 }

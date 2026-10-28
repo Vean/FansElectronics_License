@@ -4,8 +4,8 @@
   Writer      : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-06
-  Updated     : 2026-08-21
-  Library     : FansElectronics_License v2.1.0
+  Updated     : 2026-10-28
+  Library     : FansElectronics_License v2.3.0
   Website     : https://www.fanselectronics.com
   Repository  : https://github.com/Vean/FansElectronics_License
   Example     : Universal_Tester_ESP32
@@ -18,10 +18,10 @@
 #include <ArduinoJson.h>
 #include <FansElectronics_License.h>
 
-// =========================================================
-// EN: CHANGE MODE HERE FOR TESTING (Choose one)
-// ID: UBAH MODE DI SINI UNTUK TESTING (Pilih salah satu)
-// =========================================================
+/*------------------------------------------------------------------------------
+  EN: CHANGE MODE HERE FOR TESTING (Choose one)
+  ID: UBAH MODE DI SINI UNTUK TESTING (Pilih salah satu)
+*/
 // #define FEL_CURRENT_MODE FEL_MODE_LIGHT
 // #define FEL_CURRENT_MODE FEL_MODE_HMAC
 // #define FEL_CURRENT_MODE FEL_MODE_ECDSA
@@ -29,10 +29,10 @@
 // #define FEL_CURRENT_MODE FEL_MODE_HMAC_AES
 #define FEL_CURRENT_MODE FEL_MODE_ECDSA_AES
 
-// =========================================================
-// EN: SECRET KEYS CONFIGURATION
-// ID: KONFIGURASI KUNCI RAHASIA
-// =========================================================
+/*------------------------------------------------------------------------------
+  EN: SECRET KEYS CONFIGURATION
+  ID: KONFIGURASI KUNCI RAHASIA
+*/
 // EN: Define your product secret
 // ID: Definisikan product secret Anda
 #define PRODUCT_SECRET "MY_SECRET"
@@ -63,15 +63,18 @@ FansElectronics_License license(doc, FEL_CURRENT_MODE);
 
 // EN: Variable status code
 // ID: Variable dari kode status
-LicenseStatus status
+LicenseStatus status;
 
-    // EN: Setup function
-    // ID: Fungsi setup
-    void setup()
+/*------------------------------------------------------------------------------
+  EN: Setup function
+  ID: Fungsi setup
+*/
+void setup()
 {
   // EN: Start Serial communication
   // ID: Mulai komunikasi Serial
   Serial.begin(115200);
+  delay(1000);
 
   // EN: Print current testing mode
   // ID: Cetak mode pengujian saat ini
@@ -102,7 +105,7 @@ LicenseStatus status
   }
 
   // EN: Auto-Select Crypto Key
-  // ID: --- Auto-Select Crypto Key ---
+  // ID: Otomatis pilih Crypto Key
   const char *activeCryptoKey = "";
   if (FEL_CURRENT_MODE == FEL_MODE_HMAC || FEL_CURRENT_MODE == FEL_MODE_HMAC_AES)
   {
@@ -114,20 +117,16 @@ LicenseStatus status
   }
 
   // EN: Execution Verification
-  // ID: --- Verifikasi Eksekusi ---
+  // ID: Verifikasi Eksekusi
   status = license.verifyLicense(
-      // EN: Automatically use PUBLIC_KEY or HMAC_SECRET
-      // ID: Otomatis pakai PUBLIC_KEY atau HMAC_SECRET
       activeCryptoKey,
       PRODUCT_SECRET,
       FEL_ID_LEN_64,
       true,
-      // EN: AES Key (Automatically ignored if mode is not _AES)
-      // ID: Kunci AES (Otomatis diabaikan jika mode bukan _AES)
       AES_SECRET);
 
   // EN: Final Result
-  // ID: --- Hasil Akhir ---
+  // ID: Hasil Akhir
   if (status == FEL_LICENSE_OK)
   {
     // EN: License Valid (Access Granted)
@@ -142,29 +141,35 @@ LicenseStatus status
     Serial.println(status);
   }
 
+#ifdef FEL_ENABLE_DEBUG
   // EN: Print Data (Successful Decryption/Not)
   // ID: Cetak Data (Berhasil Dekripsi/Tidak)
   license.printLicenseData(Serial);
+#endif
 }
 
-// EN: Loop function
-// ID: Fungsi loop
+/*------------------------------------------------------------------------------
+  EN: Loop function
+  ID: Fungsi loop
+*/
 void loop()
-{ // EN: License Valid (Access Granted)
-  // ID: License Valid (Akses Diberikan)
-  if (status == FEL_LICENSE_OK)
+{
+  // EN: Runtime hardware entropy token verification
+  // ID: Verifikasi token runtime berbasis hardware entropy
+  if (license.isValid())
   {
-    Serial.println("✅ License Valid (Akses Diberikan)");
+    // EN: License Valid (Access Granted)
+    // ID: License Valid (Akses Diberikan)
+    Serial.println("✅ License Valid (Akses Diberikan - Token Aman)");
   }
-  // EN: License Invalid! Error Code:
-  // ID: License Invalid! Error Code:
   else
   {
-    Serial.print("❌ License Invalid! Error Code: ");
-    Serial.println(status);
+    // EN: License Invalid! Error Code:
+    // ID: License Invalid! Error Code:
+    Serial.println("❌ License Invalid! Akses Ditolak.");
   }
 
-  // EN: Delay for 1 second
-  // ID: Delay selama 1 detik
-  delay(1000);
+  // EN: Delay for 2 seconds
+  // ID: Delay selama 2 detik
+  delay(2000);
 }

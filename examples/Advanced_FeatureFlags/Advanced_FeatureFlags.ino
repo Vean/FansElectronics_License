@@ -4,11 +4,11 @@
   Writer      : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-07
-  Updated     : 2026-08-21
-  Library     : FansElectronics_License v2.1.0
+  Updated     : 2026-10-28
+  Library     : FansElectronics_License v2.3.0
   Website     : https://www.fanselectronics.com
   Repository  : https://github.com/Vean/FansElectronics_License
-  Example     : Basic_HMAC
+  Example     : Advanced_FeatureFlags
 
   Copyright (c) 2016-2026 Fans Electronics
 
@@ -48,7 +48,7 @@
 #define JSON_MEMORY 1024
 
 // EN: Set ESP8266 & ESP32 JSON Memory Type
-// ID: Set  ESP8266 & ESP32 JSON Tipe Memory
+// ID: Set ESP8266 & ESP32 JSON Tipe Memory
 #if defined(ESP8266)
 StaticJsonDocument<JSON_MEMORY> doc;
 #elif defined(ESP32)
@@ -57,42 +57,42 @@ DynamicJsonDocument doc(JSON_MEMORY);
 
 // EN: Create FansElectronics_License object in HMAC mode
 // ID: Buat objek FansElectronics_License dalam mode HMAC
-FansElectronics_License license(doc, FEL_MODE_HMAC); // JSON doc, Encryption Type
+FansElectronics_License license(doc, FEL_MODE_HMAC);
 
-// ===== SIMULASI HARDWARE =====
-int installedPanels = 4; // jumlah panel fisik terpasang
-int userBrightness = 90; // brightness yang diminta user
+// EN: Hardware simulation
+// ID: Simulasi hardware fisik
+int installedPanels = 4;
+int userBrightness = 90;
 
-// ------------------------------------------------------------
-// HELPER: READ FEATURE FLAGS
-// ------------------------------------------------------------
+/*------------------------------------------------------------------------------
+  EN: HELPER: READ FEATURE FLAGS
+  ID: HELPER: BACA FEATURE FLAGS MENGGUNAKAN GETTER RESMI
+*/
 int getLicensedPanelLimit()
 {
-    JsonDocument &doc = license.getLicenseJSON();
-    return doc["data"]["panel"] | 1; // default 1 panel
+    return license.getInt("panel", 1);
 }
 
 bool isWifiEnabled()
 {
-    JsonDocument &doc = license.getLicenseJSON();
-    return doc["data"]["wifi"] | false;
+    return license.getBool("wifi", false);
 }
 
 int getMaxBrightness()
 {
-    JsonDocument &doc = license.getLicenseJSON();
-    return doc["data"]["brightness"] | 30; // default 30%
+    return license.getInt("brightness", 30);
 }
 
-// ------------------------------------------------------------
-//  EN: Setup function
-//  ID: Fungsi setup
-// ------------------------------------------------------------
+/*------------------------------------------------------------------------------
+  EN: Setup function
+  ID: Fungsi setup
+*/
 void setup()
 {
     // EN: Start Serial communication
     // ID: Mulai komunikasi Serial
     Serial.begin(115200);
+    delay(1000);
     Serial.println();
     Serial.println("\n=== FEATURE FLAGS DEMO ===\n");
 
@@ -118,10 +118,10 @@ void setup()
     }
 
     // EN: HMAC → verification use BearSSL (Recomended for ESP8266)
-    // ID: HMAC → verifikasimenggunakan BearSSL (Direkomendasikan untuk ESP8266)
+    // ID: HMAC → verifikasi menggunakan BearSSL (Direkomendasikan untuk ESP8266)
     LicenseStatus status = license.verifyLicense(
-        HMAC_SECRET,     // HMAC crypto key
-        PRODUCT_SECRET); // Device binding secret
+        HMAC_SECRET,
+        PRODUCT_SECRET);
 
     // EN: License is valid
     // ID: Lisensi valid
@@ -132,22 +132,22 @@ void setup()
     else
     {
         Serial.println("❌ License Invalid");
+        return;
     }
 
+#ifdef FEL_ENABLE_DEBUG
     // EN: Print license data
     // ID: Cetak data lisensi
     license.printLicenseData(Serial);
+#endif
 
-    // =========================================================
-    // FEATURE FLAGS
-    // =========================================================
     // EN: Read feature flags from license
     // ID: Baca feature flags dari lisensi
     int licensedPanels = getLicensedPanelLimit();
     bool wifiAllowed = isWifiEnabled();
     int maxBrightness = getMaxBrightness();
 
-    Serial.println("===== LICENSE FEATURES =====");
+    Serial.println("\n===== LICENSE FEATURES =====");
     Serial.print("Max Panel       : ");
     Serial.println(licensedPanels);
     Serial.print("WiFi Enabled    : ");
@@ -156,9 +156,6 @@ void setup()
     Serial.println(maxBrightness);
     Serial.println("============================\n");
 
-    // =========================================================
-    // APPLY PANEL LIMIT
-    // =========================================================
     // EN: Apply panel limit
     // ID: Terapkan batas panel
     if (installedPanels > licensedPanels)
@@ -173,9 +170,6 @@ void setup()
     Serial.println(installedPanels);
     Serial.println();
 
-    // =========================================================
-    // APPLY WIFI FEATURE
-    // =========================================================
     // EN: Apply WiFi feature
     // ID: Terapkan fitur WiFi
     if (wifiAllowed)
@@ -189,9 +183,6 @@ void setup()
 
     Serial.println();
 
-    // =========================================================
-    // APPLY BRIGHTNESS LIMIT
-    // =========================================================
     // EN: Apply brightness limit
     // ID: Terapkan batas brightness
     if (userBrightness > maxBrightness)
@@ -204,8 +195,10 @@ void setup()
     Serial.println(userBrightness);
 }
 
-// EN: Loop function
-// ID: Fungsi loop
+/*------------------------------------------------------------------------------
+  EN: Loop function
+  ID: Fungsi loop
+*/
 void loop()
 {
     // EN: Main Program Loop

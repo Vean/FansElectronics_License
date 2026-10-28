@@ -4,8 +4,8 @@
   Writer      : Irfan Indra Kurniawan, ST
   Author      : Fans Electronics
   Created     : 2026-02-06
-  Updated     : 2026-08-21
-  Library     : FansElectronics_License v2.1.0
+  Updated     : 2026-10-28
+  Library     : FansElectronics_License v2.3.0
   Website     : https://www.fanselectronics.com
   Repository  : https://github.com/Vean/FansElectronics_License
   Example     : Basic_HMAC
@@ -31,7 +31,7 @@
 #define JSON_MEMORY 1024
 
 // EN: Set ESP8266 & ESP32 JSON Memory Type
-// ID: Set  ESP8266 & ESP32 JSON Tipe Memory
+// ID: Set ESP8266 & ESP32 JSON Tipe Memory
 #if defined(ESP8266)
 StaticJsonDocument<JSON_MEMORY> doc;
 #elif defined(ESP32)
@@ -40,15 +40,18 @@ DynamicJsonDocument doc(JSON_MEMORY);
 
 // EN: Create FansElectronics_License object in HMAC mode
 // ID: Buat objek FansElectronics_License dalam mode HMAC
-FansElectronics_License license(doc, FEL_MODE_HMAC); // JSON doc, Encryption Type
+FansElectronics_License license(doc, FEL_MODE_HMAC);
 
-//  EN: Setup function
-//  ID: Fungsi setup
+/*------------------------------------------------------------------------------
+  EN: Setup function
+  ID: Fungsi setup
+*/
 void setup()
 {
   // EN: Start Serial communication
   // ID: Mulai komunikasi Serial
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println("=== HMAC MODE ===");
 
@@ -74,7 +77,7 @@ void setup()
   }
 
   // EN: HMAC → verification use BearSSL (Recomended for ESP8266)
-  // ID: HMAC → verifikasimenggunakan BearSSL (Direkomendasikan untuk ESP8266)
+  // ID: HMAC → verifikasi menggunakan BearSSL (Direkomendasikan untuk ESP8266)
   LicenseStatus status = license.verifyLicense(
       HMAC_SECRET,     // HMAC crypto key
       PRODUCT_SECRET); // Device binding secret
@@ -90,18 +93,34 @@ void setup()
     Serial.println("❌ License Invalid");
   }
 
+#ifdef FEL_ENABLE_DEBUG
   // EN: Print license data
   // ID: Cetak data lisensi
   license.printLicenseData(Serial);
+#endif
 
   // EN: End of setup
   // ID: Akhir dari setup
 }
 
-// EN: Loop function
-// ID: Fungsi loop
+/*------------------------------------------------------------------------------
+  EN: Loop function
+  ID: Fungsi loop
+*/
 void loop()
 {
-  // EN: Main Program Loop
-  // ID: Program Utama Loop
+  // EN: Runtime hardware entropy token verification
+  // ID: Verifikasi token runtime berbasis hardware entropy
+  if (license.isValid())
+  {
+    // EN: Main Program Loop (License Valid)
+    // ID: Program Utama Loop (Lisensi Sah)
+  }
+  else
+  {
+    // EN: System Locked / Unauthorized
+    // ID: Sistem Terkunci / Tidak Berlisensi
+  }
+
+  delay(1000);
 }
