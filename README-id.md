@@ -116,14 +116,11 @@ String PRODUCT_SECRET = license.decodeSecret(SECRET_OBF, sizeof(SECRET_OBF), XOR
 
 ---
 
-## Persyaratan ArduinoJson ⚠️
-Pustaka ini menggunakan **ArduinoJson v6.21.5**.
+## Kompatibilitas ArduinoJson 📦
+Pustaka ini mendukung penuh penggunaan **ArduinoJson v6 maupun v7** pada platform **ESP32 dan ESP8266**.
 
-Mengapa bukan ArduinoJson v7?
-- ESP8266 memerlukan alokasi memori yang deterministik
-- v7 menggunakan alokasi *heap* dinamis
-- *Fixed memory pool* pada v6 lebih stabil untuk perangkat IoT yang beroperasi dalam jangka waktu lama
-<small><b>Catatan:</b> Jika menggunakan <b>ESP32</b>, ArduinoJson v7 dapat digunakan tanpa kendala.</small>
+- **ArduinoJson v7 (Direkomendasikan):** Penggunaan lebih praktis dengan model dokumen terpadu modern dan alokasi yang efisien.
+- **ArduinoJson v6.21.5:** Tetap didukung penuh untuk proyek yang masih menggunakan versi lama atau mengutamakan alokasi memori statis.
 
 ---
 

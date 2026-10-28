@@ -115,14 +115,11 @@ String PRODUCT_SECRET = license.decodeSecret(SECRET_OBF, sizeof(SECRET_OBF), XOR
 
 ---
 
-## ArduinoJson Requirement ⚠️
-This library uses **ArduinoJson v6.21.5**.
+## ArduinoJson Compatibility 📦
+This library is fully compatible with both **ArduinoJson v6 and v7** across **ESP32 and ESP8266** platforms.
 
-Why not ArduinoJson v7?
-- ESP8266 requires deterministic memory allocation
-- v7 uses dynamic heap allocation
-- v6 fixed memory pool is more stable for long-running IoT devices
-<small><b>Note:</b> If using <b>ESP32</b>, ArduinoJson v7 is supported without issue.</small>
+- **ArduinoJson v7 (Recommended):** Modern, simplified unified document model with optimized dynamic allocation.
+- **ArduinoJson v6.21.5:** Fully supported for legacy projects or strictly static-allocated memory setups.
 
 ---
 
