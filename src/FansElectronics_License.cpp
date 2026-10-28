@@ -659,45 +659,6 @@ String FansElectronics_License::getLicensedDeviceID()
 }
 
 /*------------------------------------------------------------------------------
-  Fungsi Debugging (Hanya Dikompilasi Jika FEL_ENABLE_DEBUG Aktif)
-*/
-#ifdef FEL_ENABLE_DEBUG
-void FansElectronics_License::printDebug(Stream &s)
-{
-  s.println("===== LICENSE DEBUG =====");
-  s.print("Loaded      : ");
-  s.println(_licenseLoaded);
-  s.print("Checksum    : 0x");
-  s.println(_authChecksum, HEX);
-  s.print("Last Status : ");
-  s.println((int)_lastStatus);
-  s.println("=========================");
-}
-
-void FansElectronics_License::printLicenseData(Stream &s)
-{
-  if (!_licenseLoaded)
-  {
-    s.println("License not loaded");
-    return;
-  }
-
-  s.println("===== LICENSE DATA =====");
-
-  JsonObject data = _doc["data"];
-
-  for (JsonPair kv : data)
-  {
-    s.print(kv.key().c_str());
-    s.print("\t: ");
-    s.println(kv.value().as<String>());
-  }
-
-  s.println("========================");
-}
-#endif
-
-/*------------------------------------------------------------------------------
   Parse Public Key PEM → Base64 Only (PROGMEM Safe)
 */
 String FansElectronics_License::parsePublicKeyToString(const char *pem)

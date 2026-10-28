@@ -128,16 +128,58 @@ public:
   String getModeString();
   String getLibraryVersion();
 
-#ifdef FEL_ENABLE_DEBUG
-  void printDebug(Stream &s);
-  void printLicenseData(Stream &s);
-#endif
-
   JsonDocument &getLicenseJSON();
   String getLicensedDeviceID();
 
   // Generator Checksum Hardware Entropy (32-bit Token Mask)
   uint32_t getDeviceEntropy(const String &secret);
+
+  /*----------------------------------------------------------------------------
+    Fungsi Debugging (Inline Header Guard)
+    Otomatis dibersihkan oleh compiler jika FEL_ENABLE_DEBUG tidak aktif
+  ----------------------------------------------------------------------------*/
+#if defined(FEL_ENABLE_DEBUG) && (FEL_ENABLE_DEBUG == 1 || FEL_ENABLE_DEBUG == true)
+
+  inline void printDebug(Stream &s)
+  {
+    s.println(F("===== LICENSE DEBUG ====="));
+    s.print(F("Loaded      : "));
+    s.println(_licenseLoaded);
+    s.print(F("Checksum    : 0x"));
+    s.println(_authChecksum, HEX);
+    s.print(F("Last Status : "));
+    s.println((int)_lastStatus);
+    s.println(F("========================="));
+  }
+
+  inline void printLicenseData(Stream &s = Serial)
+  {
+    if (!_licenseLoaded)
+    {
+      s.println(F("License not loaded"));
+      return;
+    }
+
+    s.println(F("===== LICENSE DATA ====="));
+
+    JsonObject data = _doc["data"];
+
+    for (JsonPair kv : data)
+    {
+      s.print(kv.key().c_str());
+      s.print(F("\t: "));
+      s.println(kv.value().as<String>());
+    }
+
+    s.println(F("========================"));
+  }
+
+#else
+
+  inline void printDebug(Stream &s) {}
+  inline void printLicenseData(Stream &s = Serial) {}
+
+#endif
 
 private:
   JsonDocument &_doc;
